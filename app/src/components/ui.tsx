@@ -1,13 +1,29 @@
 import type { ReactNode } from "react";
 
+export function Tooltip({ text, children }: { text: string; children: ReactNode }) {
+  return (
+    <span className="group/tip relative inline-block">
+      {children}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-64 max-w-[80vw] rounded-lg border border-line bg-surface-2 p-2.5 text-xs font-normal leading-snug text-ink opacity-0 shadow-xl transition-opacity duration-150 group-hover/tip:opacity-100 group-focus-within/tip:opacity-100"
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
 export function Card({
   title,
   icon,
+  headerAction,
   children,
   className = "",
 }: {
   title?: ReactNode;
   icon?: ReactNode;
+  headerAction?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -16,10 +32,13 @@ export function Card({
       className={`rounded-2xl border border-line bg-surface p-4 ${className}`}
     >
       {title && (
-        <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-ink">
-          {icon && <span className="text-primary">{icon}</span>}
-          {title}
-        </h3>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
+            {icon && <span className="text-primary">{icon}</span>}
+            {title}
+          </h3>
+          {headerAction}
+        </div>
       )}
       {children}
     </section>
@@ -64,7 +83,7 @@ export function conformanceColor(score: number) {
 export function conformanceTextColor(score: number) {
   if (score >= 80) return "text-secondary";
   if (score >= 60) return "text-warning";
-  return "text-primary";
+  return "text-primary-text";
 }
 
 export function ProgressBar({
@@ -124,10 +143,10 @@ export function PrimaryButton({
   const base =
     "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed";
   const variants: Record<string, string> = {
-    primary: "bg-primary text-white hover:bg-primary-hover",
+    primary: "bg-primary-hover text-white hover:bg-primary-active",
     secondary:
       "bg-surface-2 text-ink border border-line hover:border-ink-faint",
-    danger: "bg-primary text-white hover:bg-primary-hover",
+    danger: "bg-primary-hover text-white hover:bg-primary-active",
     ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
   };
   return (
@@ -147,23 +166,34 @@ export function Field({
   required,
   children,
   hint,
+  error,
 }: {
   label: string;
   required?: boolean;
   children: ReactNode;
   hint?: string;
+  error?: string;
 }) {
   return (
     <label className="mb-4 block">
       <span className="mb-1.5 block text-sm font-medium text-ink-muted">
         {label}
-        {required && <span className="ml-0.5 text-primary">*</span>}
+        {required && <span className="ml-0.5 text-primary-text">*</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>}
+      {error ? (
+        <span role="alert" className="mt-1 block text-xs text-primary-text">
+          {error}
+        </span>
+      ) : (
+        hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>
+      )}
     </label>
   );
 }
 
 export const inputClass =
   "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+
+export const inputErrorClass =
+  "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";

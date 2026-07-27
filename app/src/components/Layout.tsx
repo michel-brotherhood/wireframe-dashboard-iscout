@@ -47,7 +47,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-primary/15 text-primary"
+                      ? "bg-primary/15 text-primary-text"
                       : "text-ink-muted hover:bg-surface-2 hover:text-ink"
                   }`
                 }
@@ -81,7 +81,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
                   `flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                    isActive ? "bg-primary/15 text-primary" : "text-ink-muted"
+                    isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
                   }`
                 }
               >

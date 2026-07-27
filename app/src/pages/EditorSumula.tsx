@@ -121,7 +121,7 @@ export default function EditorSumula() {
           </PrimaryButton>
         </div>
         {error && (
-          <p role="alert" className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+          <p role="alert" className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary-text">
             <Icon name="alert" className="h-4 w-4" /> {error}
           </p>
         )}

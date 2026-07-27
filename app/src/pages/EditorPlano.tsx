@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
+import { Card, Field, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 
 const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
 
 const COORDENACAO_OPTIONS = ["Aquecimento Lúdico", "Aquecimento Técnico"];
 const ESTACOES_OPTIONS = ["Com bola", "Sem bola", "Recreativo"];
+
+// "Hoje" fixo do mundo mock (mesma data usada como padrão no filtro do Dashboard).
+// Plano precisa ser criado com pelo menos 24h de antecedência da sessão.
+const HOJE_MOCK = "2026-07-02";
+const MIN_DATA = "2026-07-03";
 
 function DiagramUpload() {
   return (
@@ -93,7 +98,7 @@ function DynamicList({
           </button>
         </div>
       ))}
-      <button type="button" className="flex items-center gap-1 text-sm font-medium text-primary" onClick={onAdd}>
+      <button type="button" className="flex items-center gap-1 text-sm font-medium text-primary-text" onClick={onAdd}>
         <Icon name="plus" className="h-3.5 w-3.5" /> {addLabel}
       </button>
     </div>
@@ -103,6 +108,8 @@ function DynamicList({
 export default function EditorPlano() {
   const [tab, setTab] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
+  const [statusIsError, setStatusIsError] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [data, setData] = useState("2026-07-03");
   const [team, setTeam] = useState("Amarelo");
@@ -149,6 +156,72 @@ export default function EditorPlano() {
     setList(list.filter((_, i) => i !== idx));
   }
 
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!(field in prev)) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function validateHeader(): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (!data) e.data = "Informe a data da sessão.";
+    else if (data < MIN_DATA) e.data = `Plano deve ser criado com 24h de antecedência (a partir de ${MIN_DATA}).`;
+    return e;
+  }
+
+  function validateTab(idx: number): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (idx === 0) {
+      if (!inicialObjetivo.trim()) e.inicialObjetivo = "Objetivo é obrigatório.";
+      if (!inicialDuracao || inicialDuracao <= 0) e.inicialDuracao = "Duração deve ser maior que 0.";
+    }
+    if (idx === 1) {
+      if (!funcObjetivo.trim()) e.funcObjetivo = "Objetivo é obrigatório.";
+      if (!funcDuracao || funcDuracao <= 0) e.funcDuracao = "Duração deve ser maior que 0.";
+      if (!funcTema.trim()) e.funcTema = "Tema é obrigatório.";
+    }
+    if (idx === 2) {
+      if (!principalObjetivo.trim()) e.principalObjetivo = "Objetivo é obrigatório.";
+      if (!principalDuracao || principalDuracao <= 0) e.principalDuracao = "Duração deve ser maior que 0.";
+    }
+    return e;
+  }
+
+  function goToNext(nextTab: number) {
+    const tabErrors = validateTab(tab);
+    if (Object.keys(tabErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...tabErrors }));
+      return;
+    }
+    setTab(nextTab);
+  }
+
+  function handleSubmit() {
+    const allErrors = { ...validateHeader(), ...validateTab(0), ...validateTab(1), ...validateTab(2) };
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
+      const firstInvalidTab = [0, 1, 2].find((i) => Object.keys(validateTab(i)).length > 0);
+      if (allErrors.data) {
+        setTab(0);
+      } else if (firstInvalidTab !== undefined) {
+        setTab(firstInvalidTab);
+      }
+      setStatusIsError(true);
+      setStatus("Corrija os campos obrigatórios destacados antes de submeter.");
+      return;
+    }
+    if (total < 30 || total > 120) {
+      setStatusIsError(true);
+      setStatus("Duração total precisa ficar entre 30 e 120 minutos antes de submeter.");
+      return;
+    }
+    setStatusIsError(false);
+    setStatus("Plano submetido para aprovação.");
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -159,8 +232,17 @@ export default function EditorPlano() {
 
       <Card>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label="Data" required>
-            <input type="date" className={inputClass} value={data} onChange={(e) => setData(e.target.value)} />
+          <Field label="Data" required error={errors.data} hint={!errors.data ? `Mínimo: ${MIN_DATA} (24h após ${HOJE_MOCK})` : undefined}>
+            <input
+              type="date"
+              min={MIN_DATA}
+              className={errors.data ? inputErrorClass : inputClass}
+              value={data}
+              onChange={(e) => {
+                setData(e.target.value);
+                clearError("data");
+              }}
+            />
           </Field>
           <Field label="Team" required>
             <select className={inputClass} value={team} onChange={(e) => setTeam(e.target.value)}>
@@ -186,7 +268,7 @@ export default function EditorPlano() {
             aria-selected={tab === i}
             onClick={() => setTab(i)}
             className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-              tab === i ? "bg-primary text-white" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
+              tab === i ? "bg-primary-hover text-white" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
             }`}
           >
             {t}
@@ -194,18 +276,41 @@ export default function EditorPlano() {
         ))}
       </div>
 
+      {status && (
+        <p
+          role="status"
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm ${
+            statusIsError
+              ? "border-primary/30 bg-primary/10 text-primary-text"
+              : "border-secondary/30 bg-secondary/10 text-secondary"
+          }`}
+        >
+          <Icon name={statusIsError ? "alert" : "check"} className="h-4 w-4" /> {status}
+        </p>
+      )}
+
       {tab === 0 && (
         <Card title="Aba 1 · Etapa Inicial (Aquecimento)">
-          <Field label="Objetivo" required>
-            <input className={inputClass} value={inicialObjetivo} onChange={(e) => setInicialObjetivo(e.target.value)} />
+          <Field label="Objetivo" required error={errors.inicialObjetivo}>
+            <input
+              className={errors.inicialObjetivo ? inputErrorClass : inputClass}
+              value={inicialObjetivo}
+              onChange={(e) => {
+                setInicialObjetivo(e.target.value);
+                clearError("inicialObjetivo");
+              }}
+            />
           </Field>
-          <Field label="Duração (minutos)" required>
+          <Field label="Duração (minutos)" required error={errors.inicialDuracao}>
             <input
               type="number"
               min={1}
-              className={inputClass}
+              className={errors.inicialDuracao ? inputErrorClass : inputClass}
               value={inicialDuracao}
-              onChange={(e) => setInicialDuracao(Number(e.target.value))}
+              onChange={(e) => {
+                setInicialDuracao(Number(e.target.value));
+                clearError("inicialDuracao");
+              }}
             />
           </Field>
           <Checklist
@@ -222,7 +327,7 @@ export default function EditorPlano() {
           />
           <DiagramUpload />
           <div className="flex justify-end">
-            <PrimaryButton onClick={() => setTab(1)}>
+            <PrimaryButton onClick={() => goToNext(1)}>
               Próximo <Icon name="arrowRight" className="h-4 w-4" />
             </PrimaryButton>
           </div>
@@ -231,16 +336,26 @@ export default function EditorPlano() {
 
       {tab === 1 && (
         <Card title="Aba 2 · Etapa Funcionamento">
-          <Field label="Objetivo" required>
-            <input className={inputClass} value={funcObjetivo} onChange={(e) => setFuncObjetivo(e.target.value)} />
+          <Field label="Objetivo" required error={errors.funcObjetivo}>
+            <input
+              className={errors.funcObjetivo ? inputErrorClass : inputClass}
+              value={funcObjetivo}
+              onChange={(e) => {
+                setFuncObjetivo(e.target.value);
+                clearError("funcObjetivo");
+              }}
+            />
           </Field>
-          <Field label="Duração (minutos)" required>
+          <Field label="Duração (minutos)" required error={errors.funcDuracao}>
             <input
               type="number"
               min={1}
-              className={inputClass}
+              className={errors.funcDuracao ? inputErrorClass : inputClass}
               value={funcDuracao}
-              onChange={(e) => setFuncDuracao(Number(e.target.value))}
+              onChange={(e) => {
+                setFuncDuracao(Number(e.target.value));
+                clearError("funcDuracao");
+              }}
             />
           </Field>
           <fieldset className="mb-4">
@@ -260,15 +375,22 @@ export default function EditorPlano() {
               ))}
             </div>
           </fieldset>
-          <Field label="Tema" required>
-            <input className={inputClass} value={funcTema} onChange={(e) => setFuncTema(e.target.value)} />
+          <Field label="Tema" required error={errors.funcTema}>
+            <input
+              className={errors.funcTema ? inputErrorClass : inputClass}
+              value={funcTema}
+              onChange={(e) => {
+                setFuncTema(e.target.value);
+                clearError("funcTema");
+              }}
+            />
           </Field>
           <DiagramUpload />
           <div className="flex justify-between">
             <PrimaryButton variant="secondary" onClick={() => setTab(0)}>
               <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
-            <PrimaryButton onClick={() => setTab(2)}>
+            <PrimaryButton onClick={() => goToNext(2)}>
               Próximo <Icon name="arrowRight" className="h-4 w-4" />
             </PrimaryButton>
           </div>
@@ -277,16 +399,26 @@ export default function EditorPlano() {
 
       {tab === 2 && (
         <Card title="Aba 3 · Etapa Principal">
-          <Field label="Objetivo" required>
-            <input className={inputClass} value={principalObjetivo} onChange={(e) => setPrincipalObjetivo(e.target.value)} />
+          <Field label="Objetivo" required error={errors.principalObjetivo}>
+            <input
+              className={errors.principalObjetivo ? inputErrorClass : inputClass}
+              value={principalObjetivo}
+              onChange={(e) => {
+                setPrincipalObjetivo(e.target.value);
+                clearError("principalObjetivo");
+              }}
+            />
           </Field>
-          <Field label="Duração (minutos)" required>
+          <Field label="Duração (minutos)" required error={errors.principalDuracao}>
             <input
               type="number"
               min={1}
-              className={inputClass}
+              className={errors.principalDuracao ? inputErrorClass : inputClass}
               value={principalDuracao}
-              onChange={(e) => setPrincipalDuracao(Number(e.target.value))}
+              onChange={(e) => {
+                setPrincipalDuracao(Number(e.target.value));
+                clearError("principalDuracao");
+              }}
             />
           </Field>
 
@@ -331,7 +463,7 @@ export default function EditorPlano() {
             <PrimaryButton variant="secondary" onClick={() => setTab(1)}>
               <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
-            <PrimaryButton onClick={() => setTab(3)}>
+            <PrimaryButton onClick={() => goToNext(3)}>
               Próximo <Icon name="arrowRight" className="h-4 w-4" />
             </PrimaryButton>
           </div>
@@ -350,7 +482,7 @@ export default function EditorPlano() {
 
           <div className="mb-4 flex items-center justify-between rounded-xl border border-line-soft bg-surface-2 px-3 py-2 text-sm">
             <span className="font-medium text-ink-muted">Total Planejado</span>
-            <span className={`flex items-center gap-1.5 font-semibold ${total >= 30 && total <= 120 ? "text-secondary" : "text-primary"}`}>
+            <span className={`flex items-center gap-1.5 font-semibold ${total >= 30 && total <= 120 ? "text-secondary" : "text-primary-text"}`}>
               {total} minutos
               {total >= 30 && total <= 120 ? (
                 <Icon name="check" className="h-4 w-4" />
@@ -367,22 +499,18 @@ export default function EditorPlano() {
               <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <PrimaryButton variant="secondary" onClick={() => setStatus("Plano salvo como draft.")}>
+              <PrimaryButton
+                variant="secondary"
+                onClick={() => {
+                  setStatusIsError(false);
+                  setStatus("Plano salvo como draft.");
+                }}
+              >
                 Salvar como Draft
               </PrimaryButton>
-              <PrimaryButton
-                disabled={total < 30 || total > 120}
-                onClick={() => setStatus("Plano submetido para aprovação.")}
-              >
-                Submeter para Aprovação
-              </PrimaryButton>
+              <PrimaryButton onClick={handleSubmit}>Submeter para Aprovação</PrimaryButton>
             </div>
           </div>
-          {status && (
-            <p role="status" className="mt-3 flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
-              <Icon name="check" className="h-4 w-4" /> {status}
-            </p>
-          )}
         </Card>
       )}
     </div>

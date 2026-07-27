@@ -59,16 +59,18 @@ function ConformanceDot(props: { cx?: number; cy?: number; payload?: { conformid
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [dataFilter, setDataFilter] = useState("2026-07-02");
   const [teamFilter, setTeamFilter] = useState<string>("Todos");
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
 
   const filteredTreinos = useMemo(() => {
     return treinos.filter((t) => {
+      if (dataFilter && t.sessionDate > dataFilter) return false;
       if (teamFilter !== "Todos" && t.team !== teamFilter) return false;
       if (statusFilter !== "Todos" && t.status !== statusFilter) return false;
       return true;
     });
-  }, [teamFilter, statusFilter]);
+  }, [dataFilter, teamFilter, statusFilter]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -92,8 +94,13 @@ export default function Dashboard() {
           onSubmit={(e) => e.preventDefault()}
         >
           <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-ink-muted">Data</span>
-            <input type="date" defaultValue="2026-07-02" className={inputClass} />
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Data (até)</span>
+            <input
+              type="date"
+              value={dataFilter}
+              onChange={(e) => setDataFilter(e.target.value)}
+              className={inputClass}
+            />
           </label>
           <label className="flex-1">
             <span className="mb-1 block text-xs font-medium text-ink-muted">Team</span>
@@ -122,7 +129,7 @@ export default function Dashboard() {
         </form>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metricCards.map((m) => (
           <Card key={m.label}>
             <div className="flex items-center gap-3">
@@ -236,7 +243,7 @@ export default function Dashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-primary-text opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                       Ver Detalhes <Icon name="arrowRight" className="h-3.5 w-3.5" />
                     </span>
                   </td>
@@ -247,7 +254,7 @@ export default function Dashboard() {
         </div>
         {filteredTreinos.length >= 10 && (
           <div className="border-t border-line-soft px-4 py-3 text-center">
-            <button type="button" className="text-sm font-medium text-primary hover:underline">
+            <button type="button" className="text-sm font-medium text-primary-text hover:underline">
               Ver mais
             </button>
           </div>

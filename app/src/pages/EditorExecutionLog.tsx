@@ -22,7 +22,7 @@ function deviationInfo(planejado: number, executado: number) {
   const sign = diff > 0 ? "+" : "";
   if (abs <= 1) return { text: `${sign}${diff} minuto${abs === 1 ? "" : "s"} · dentro do esperado`, color: "text-secondary" };
   if (abs <= 3) return { text: `${sign}${diff} minutos · acima do planejado`, color: "text-warning" };
-  return { text: `${sign}${diff} minutos · desvio significativo`, color: "text-primary" };
+  return { text: `${sign}${diff} minutos · desvio significativo`, color: "text-primary-text" };
 }
 
 let desvioId = 3;
@@ -136,7 +136,7 @@ export default function EditorExecutionLog() {
       </Card>
 
       <Card title="Desvios Registrados" icon={<Icon name="alert" className="h-4 w-4" />}>
-        <button type="button" onClick={addDesvio} className="mb-4 flex items-center gap-1 text-sm font-medium text-primary">
+        <button type="button" onClick={addDesvio} className="mb-4 flex items-center gap-1 text-sm font-medium text-primary-text">
           <Icon name="plus" className="h-3.5 w-3.5" /> Adicionar desvio
         </button>
         <div className="flex flex-col gap-3">
@@ -177,7 +177,7 @@ export default function EditorExecutionLog() {
               <button
                 type="button"
                 onClick={() => removeDesvio(d.id)}
-                className="mt-1 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="mt-1 flex items-center gap-1 text-xs font-medium text-primary-text hover:underline"
               >
                 <Icon name="x" className="h-3.5 w-3.5" /> Remover
               </button>

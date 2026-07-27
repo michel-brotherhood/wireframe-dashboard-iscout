@@ -93,10 +93,22 @@ const execution0207: ExecutionLog = {
   ],
   conformanceScore: 85,
   insights: [
-    "Treino bem estruturado com boa conformidade",
-    "Ajustes de tempo foram mínimos e aceitáveis",
-    "Lesão no intervalo foi bem gerenciada",
-    "Recomendação: Manter estrutura, revisar protocolo de segurança no intervalo",
+    {
+      text: "Treino bem estruturado com boa conformidade",
+      detail: "Fase, exercícios e escalação seguiram o plano aprovado sem alterações estruturais.",
+    },
+    {
+      text: "Ajustes de tempo foram mínimos e aceitáveis",
+      detail: "Diferença total de 3 min (+2, -1, +1) entre planejado e executado, dentro da faixa de tolerância de ±5 min.",
+    },
+    {
+      text: "Lesão no intervalo foi bem gerenciada",
+      detail: "Desvio de impacto médio registrado na Etapa Principal; treino continuou sem novos incidentes.",
+    },
+    {
+      text: "Recomendação: Manter estrutura, revisar protocolo de segurança no intervalo",
+      detail: "Baseado no desvio de impacto médio — considerar checklist de segurança adicional durante o intervalo de hidratação.",
+    },
   ],
   confirmedAt: "2026-07-02T18:00:00",
 };

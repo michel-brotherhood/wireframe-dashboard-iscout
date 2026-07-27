@@ -12,8 +12,10 @@
   --font-body: "Segoe UI", Roboto, system-ui, sans-serif;
 
   /* Brand — extracted from marca-principal.png / fundo.jpg in this repo */
-  --color-primary: #e7254d; /* brand pink/red */
-  --color-primary-hover: #c81a3f;
+  --color-primary: #e7254d; /* brand pink/red — icons, dots, chart line, large/bold text (≥3:1 need) */
+  --color-primary-text: #ff6b93; /* lighter tint — small/normal text on dark surfaces (≥4.5:1 need) */
+  --color-primary-hover: #c81a3f; /* button fill default — white text passes 4.5:1 here, not on raw primary */
+  --color-primary-active: #a3123a; /* button fill hover/press */
   --color-secondary: #d3dc61; /* brand lime */
   --color-warning: #f5b942; /* amber accent, data-viz/status only */
 

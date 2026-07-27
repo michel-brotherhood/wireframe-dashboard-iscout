@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { treinos } from "../data/mockData";
 import {
@@ -5,6 +6,7 @@ import {
   ProgressBar,
   StatusBadge,
   PrimaryButton,
+  Tooltip,
   conformanceTextColor,
 } from "../components/ui";
 import { Icon } from "../components/Icon";
@@ -20,14 +22,14 @@ function formatDateTime(iso?: string) {
 function deviationLabel(planejado: number, executado: number) {
   const diff = executado - planejado;
   const sign = diff > 0 ? "+" : "";
-  const color = Math.abs(diff) <= 1 ? "text-secondary" : Math.abs(diff) <= 3 ? "text-warning" : "text-primary";
+  const color = Math.abs(diff) <= 1 ? "text-secondary" : Math.abs(diff) <= 3 ? "text-warning" : "text-primary-text";
   return { text: `${sign}${diff} min`, color };
 }
 
 const impactStyles: Record<string, string> = {
   Baixo: "bg-secondary/15 text-secondary",
   Médio: "bg-warning/15 text-warning",
-  Alto: "bg-primary/15 text-primary",
+  Alto: "bg-primary/15 text-primary-text",
 };
 
 export default function TreinoDetalhe() {
@@ -37,6 +39,22 @@ export default function TreinoDetalhe() {
   const { plano, sumula, executionLog } = treino;
   const totalPlanejado =
     plano.etapaInicial.duracaoMin + plano.etapaFuncionamento.duracaoMin + plano.etapaPrincipal.duracaoMin;
+
+  const [status, setStatus] = useState<string | null>(null);
+
+  function handleExport() {
+    setStatus("Relatório exportado (PDF) — download simulado para este wireframe.");
+  }
+
+  async function handleShare() {
+    const link = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      await navigator.clipboard?.writeText(link);
+      setStatus("Link copiado para a área de transferência.");
+    } catch {
+      setStatus(`Link: ${link}`);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,14 +78,20 @@ export default function TreinoDetalhe() {
           <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
             <Icon name="edit" className="h-4 w-4" /> Editar
           </PrimaryButton>
-          <PrimaryButton variant="secondary">
+          <PrimaryButton variant="secondary" onClick={handleExport}>
             <Icon name="download" className="h-4 w-4" /> Exportar
           </PrimaryButton>
-          <PrimaryButton variant="secondary">
+          <PrimaryButton variant="secondary" onClick={handleShare}>
             <Icon name="share" className="h-4 w-4" /> Compartilhar
           </PrimaryButton>
         </div>
       </div>
+
+      {status && (
+        <p role="status" className="flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
+          <Icon name="check" className="h-4 w-4" /> {status}
+        </p>
+      )}
 
       {/* Seção 1: Plano */}
       <Card title="Seção 1 · Plano de Aula" icon={<Icon name="clipboard" className="h-4 w-4" />}>
@@ -78,12 +102,12 @@ export default function TreinoDetalhe() {
               {formatDateTime(plano.approvedAt)} por {plano.approvedBy}
             </span>
           )}
-          <span className="ml-auto rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
+          <span className="ml-auto rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary-text">
             Fase: {plano.fase}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
             <p className="text-sm font-semibold text-ink">
               Etapa Inicial (Aquecimento) — {plano.etapaInicial.duracaoMin} min
@@ -118,7 +142,15 @@ export default function TreinoDetalhe() {
       </Card>
 
       {/* Seção 2: Súmula */}
-      <Card title="Seção 2 · Súmula" icon={<Icon name="ball" className="h-4 w-4" />}>
+      <Card
+        title="Seção 2 · Súmula"
+        icon={<Icon name="ball" className="h-4 w-4" />}
+        headerAction={
+          <PrimaryButton variant="secondary" onClick={() => navigate("/sumulas/novo")}>
+            <Icon name="edit" className="h-4 w-4" /> Editar Escalação
+          </PrimaryButton>
+        }
+      >
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={sumula.status} />
           {sumula.confirmedAt && <span className="text-ink-faint">{formatDateTime(sumula.confirmedAt)}</span>}
@@ -158,7 +190,7 @@ export default function TreinoDetalhe() {
             {executionLog.confirmedAt && <span className="text-ink-faint">{formatDateTime(executionLog.confirmedAt)}</span>}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { label: "Etapa Inicial (Aquecimento)", data: executionLog.etapaInicial },
               { label: "Etapa Funcionamento", data: executionLog.etapaFuncionamento },
@@ -228,7 +260,17 @@ export default function TreinoDetalhe() {
             </p>
             <ul className="flex flex-col gap-1 text-sm text-ink-muted">
               {executionLog.insights.map((insight, i) => (
-                <li key={i}>• {insight}</li>
+                <li key={i} className="flex gap-1.5">
+                  <span aria-hidden="true">•</span>
+                  <Tooltip text={insight.detail}>
+                    <button
+                      type="button"
+                      className="rounded text-left underline decoration-dotted decoration-ink-faint underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {insight.text}
+                    </button>
+                  </Tooltip>
+                </li>
               ))}
             </ul>
           </div>
@@ -237,10 +279,10 @@ export default function TreinoDetalhe() {
             <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
               <Icon name="edit" className="h-4 w-4" /> Editar
             </PrimaryButton>
-            <PrimaryButton variant="secondary">
+            <PrimaryButton variant="secondary" onClick={handleExport}>
               <Icon name="download" className="h-4 w-4" /> Exportar Relatório
             </PrimaryButton>
-            <PrimaryButton variant="secondary">
+            <PrimaryButton variant="secondary" onClick={handleShare}>
               <Icon name="share" className="h-4 w-4" /> Compartilhar
             </PrimaryButton>
           </div>

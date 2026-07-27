@@ -82,6 +82,11 @@ export interface Desvio {
   descricao: string;
 }
 
+export interface Insight {
+  text: string;
+  detail: string;
+}
+
 export interface ExecutionLog {
   id: string;
   planoId: string;
@@ -92,7 +97,7 @@ export interface ExecutionLog {
   etapaPrincipal: EtapaExecucao;
   desvios: Desvio[];
   conformanceScore: number;
-  insights: string[];
+  insights: Insight[];
   confirmedAt?: string;
 }
 
