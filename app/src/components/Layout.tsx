@@ -8,6 +8,7 @@ import type { IconName } from "./Icon";
 const navItems: { to: string; label: string; icon: IconName }[] = [
   { to: "/", label: "Dashboard", icon: "lineChart" },
   { to: "/planos/novo", label: "Novo Plano", icon: "clipboard" },
+  { to: "/planos/aprovacao", label: "Aprovação", icon: "stamp" },
   { to: "/sumulas/novo", label: "Nova Súmula", icon: "ball" },
   { to: "/execution/novo", label: "Registrar Execução", icon: "barChart" },
 ];

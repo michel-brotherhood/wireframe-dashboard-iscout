@@ -204,6 +204,71 @@ export const dashboardMetrics = {
   conformidadeMedia: 82.5,
 };
 
+// Fila de aprovação (RF3/RF4) — planos submetidos aguardando decisão do Manager,
+// mais um exemplo de rejeição para o histórico. Independente de `treinos` porque
+// representa planos que ainda não avançaram para súmula/execução.
+export const planosPendentesIniciais: PlanoAula[] = [
+  shallowPlan({
+    id: "plan-pend-1",
+    sessionDate: "2026-07-03",
+    team: "Amarelo",
+    coachName: "João Silva",
+    status: "submitted",
+    createdAt: "2026-07-02T09:00:00",
+    approvedAt: undefined,
+    approvedBy: undefined,
+  }),
+  shallowPlan({
+    id: "plan-pend-2",
+    sessionDate: "2026-07-03",
+    team: "Azul",
+    coachName: "Maria Santos",
+    fase: "Defensiva",
+    status: "submitted",
+    createdAt: "2026-07-02T11:20:00",
+    approvedAt: undefined,
+    approvedBy: undefined,
+  }),
+  shallowPlan({
+    id: "plan-pend-3",
+    sessionDate: "2026-07-04",
+    team: "Amarelo",
+    coachName: "João Silva",
+    status: "submitted",
+    createdAt: "2026-07-02T15:45:00",
+    approvedAt: undefined,
+    approvedBy: undefined,
+  }),
+  shallowPlan({
+    id: "plan-pend-4",
+    sessionDate: "2026-06-27",
+    team: "Azul",
+    coachName: "Maria Santos",
+    status: "rejected",
+    createdAt: "2026-06-26T09:00:00",
+    approvedAt: undefined,
+    approvedBy: undefined,
+    rejectedAt: "2026-06-26T18:10:00",
+    rejectedReason: "Duração total abaixo de 30 minutos — revisar Etapa Principal.",
+  }),
+];
+
+// Planos já aprovados e ainda sem execução registrada — fonte do seletor
+// "Plano de Referência" no Editor de Execution Log (gate do RF5).
+export const planosDisponiveisParaExecucao: PlanoAula[] = [
+  plano0207,
+  shallowPlan({
+    id: "plan-aprov-1",
+    sessionDate: "2026-07-05",
+    team: "Azul",
+    coachName: "Maria Santos",
+    status: "approved",
+    createdAt: "2026-07-03T09:00:00",
+    approvedAt: "2026-07-04T10:00:00",
+    approvedBy: "Manager",
+  }),
+];
+
 export const ambiguousMatches = [
   {
     jersey: 7,

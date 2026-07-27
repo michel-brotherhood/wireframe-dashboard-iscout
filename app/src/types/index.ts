@@ -48,6 +48,8 @@ export interface PlanoAula {
   createdAt: string;
   approvedAt?: string;
   approvedBy?: string;
+  rejectedAt?: string;
+  rejectedReason?: string;
 }
 
 export interface SumulaEntry {
