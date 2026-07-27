@@ -131,7 +131,7 @@ export default function EditorSumula() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
                 <th scope="col" className="px-3 py-2">Jersey</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
@@ -150,7 +150,7 @@ export default function EditorSumula() {
                     <button
                       type="button"
                       onClick={() => handleRemove(r.jersey)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint hover:bg-primary/10 hover:text-primary"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary"
                       aria-label={`Remover ${r.nome}`}
                     >
                       <Icon name="x" className="h-4 w-4" />
@@ -189,7 +189,7 @@ export default function EditorSumula() {
             <span className="flex items-center gap-1.5 text-warning">
               <Icon name="alert" className="h-4 w-4" /> 2 Ambíguos (precisa validação manual)
             </span>
-            <span className="flex items-center gap-1.5 text-ink-faint">
+            <span className="flex items-center gap-1.5 text-ink-muted">
               <Icon name="x" className="h-4 w-4" /> 0 Não encontrados
             </span>
           </div>

@@ -186,14 +186,14 @@ export function Field({
           {error}
         </span>
       ) : (
-        hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>
+        hint && <span className="mt-1 block text-xs text-ink-muted">{hint}</span>
       )}
     </label>
   );
 }
 
 export const inputClass =
-  "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+  "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
 
 export const inputErrorClass =
-  "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+  "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";

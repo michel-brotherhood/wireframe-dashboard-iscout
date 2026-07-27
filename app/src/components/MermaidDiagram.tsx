@@ -174,7 +174,7 @@ export function MermaidDiagram({ source }: { source: string }) {
             <Icon name="alert" className="h-4 w-4" /> {error}
           </p>
         )}
-        {!svg && !error && <p className="text-sm text-ink-faint">Renderizando diagrama…</p>}
+        {!svg && !error && <p className="text-sm text-ink-muted">Renderizando diagrama…</p>}
         {svg && (
           <div ref={measureRef}>
             <div

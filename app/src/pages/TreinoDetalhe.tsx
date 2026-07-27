@@ -98,7 +98,7 @@ export default function TreinoDetalhe() {
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={plano.status} />
           {plano.approvedAt && (
-            <span className="text-ink-faint">
+            <span className="text-ink-muted">
               {formatDateTime(plano.approvedAt)} por {plano.approvedBy}
             </span>
           )}
@@ -153,13 +153,13 @@ export default function TreinoDetalhe() {
       >
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={sumula.status} />
-          {sumula.confirmedAt && <span className="text-ink-faint">{formatDateTime(sumula.confirmedAt)}</span>}
-          <span className="ml-auto text-ink-faint">Escalação: {sumula.entries.length} jogadores</span>
+          {sumula.confirmedAt && <span className="text-ink-muted">{formatDateTime(sumula.confirmedAt)}</span>}
+          <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} jogadores</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
                 <th scope="col" className="px-3 py-2">Jersey</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
@@ -187,7 +187,7 @@ export default function TreinoDetalhe() {
         <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
             <StatusBadge status={executionLog.status} />
-            {executionLog.confirmedAt && <span className="text-ink-faint">{formatDateTime(executionLog.confirmedAt)}</span>}
+            {executionLog.confirmedAt && <span className="text-ink-muted">{formatDateTime(executionLog.confirmedAt)}</span>}
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -231,7 +231,7 @@ export default function TreinoDetalhe() {
         </Card>
       ) : (
         <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
-          <p className="text-sm text-ink-faint">Execução ainda não registrada para este treino.</p>
+          <p className="text-sm text-ink-muted">Execução ainda não registrada para este treino.</p>
         </Card>
       )}
 

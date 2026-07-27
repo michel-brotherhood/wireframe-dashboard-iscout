@@ -27,7 +27,7 @@ function DiagramUpload() {
           <Icon name="edit" className="h-4 w-4" /> Desenhar no Editor
         </PrimaryButton>
       </div>
-      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-faint sm:h-40 sm:w-72">
+      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-muted sm:h-40 sm:w-72">
         Imagem do diagrama · 300×300px
       </div>
     </div>
@@ -95,7 +95,7 @@ function DynamicList({
             type="button"
             onClick={() => onRemove(i)}
             aria-label={`Remover ${label.toLowerCase()} ${i + 1}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-faint hover:bg-primary/10 hover:text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary"
           >
             <Icon name="x" className="h-4 w-4" />
           </button>

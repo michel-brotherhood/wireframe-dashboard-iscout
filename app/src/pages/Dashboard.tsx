@@ -163,7 +163,7 @@ export default function Dashboard() {
       <Card title="Conformidade por Dia" icon={<Icon name="lineChart" className="h-4 w-4" />}>
         <div className="h-64 w-full" role="img" aria-label="Gráfico de linha mostrando conformidade por dia da semana, variando entre 58% e 92%">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={conformidadePorDia} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <LineChart data={conformidadePorDia} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#263a5c" />
               <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "#93a4c6" }} axisLine={{ stroke: "#263a5c" }} tickLine={false} />
               <YAxis
@@ -196,7 +196,7 @@ export default function Dashboard() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
                 <th scope="col" className="px-4 py-3">Data</th>
                 <th scope="col" className="px-4 py-3">Team</th>
                 <th scope="col" className="px-4 py-3">Coach</th>
@@ -239,7 +239,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ) : (
-                      <span className="text-ink-faint">-</span>
+                      <span className="text-ink-muted">-</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

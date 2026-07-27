@@ -105,7 +105,7 @@ export default function AprovacaoPlanos() {
         }
       >
         {pendentes.length === 0 ? (
-          <p className="text-sm text-ink-faint">Nenhum plano aguardando aprovação no momento.</p>
+          <p className="text-sm text-ink-muted">Nenhum plano aguardando aprovação no momento.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {pendentes.map((p) => (
@@ -167,7 +167,7 @@ export default function AprovacaoPlanos() {
 
       <Card title="Histórico Recente" icon={<Icon name="clipboard" className="h-4 w-4" />}>
         {historico.length === 0 ? (
-          <p className="text-sm text-ink-faint">Nenhuma decisão registrada ainda.</p>
+          <p className="text-sm text-ink-muted">Nenhuma decisão registrada ainda.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {historico.map((p) => (
@@ -177,7 +177,7 @@ export default function AprovacaoPlanos() {
                   <span className="font-medium text-ink">
                     {formatDate(p.sessionDate)} · Team {p.team} · {p.coachName}
                   </span>
-                  <span className="ml-auto text-ink-faint">
+                  <span className="ml-auto text-ink-muted">
                     {p.status === "approved"
                       ? `Aprovado em ${formatDateTime(p.approvedAt)} por ${p.approvedBy}`
                       : `Rejeitado em ${formatDateTime(p.rejectedAt)}`}

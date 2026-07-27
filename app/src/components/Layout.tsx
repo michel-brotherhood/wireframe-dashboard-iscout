@@ -38,7 +38,7 @@ function BottomTabLink({ to, label, icon }: { to: string; label: string; icon: I
       end={to === "/"}
       className={({ isActive }) =>
         `flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${
-          isActive ? "text-primary-text" : "text-ink-faint hover:text-ink-muted"
+          isActive ? "text-primary-text" : "text-ink-muted hover:text-ink"
         }`
       }
     >
