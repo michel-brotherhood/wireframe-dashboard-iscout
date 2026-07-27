@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Unbounded";
+  src: url("./assets/brand/Unbounded-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@theme {
+  --font-heading: "Unbounded", "Segoe UI", Roboto, sans-serif;
+  --font-body: "Segoe UI", Roboto, system-ui, sans-serif;
+
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-team-amarelo: #fbbf24;
+  --color-team-azul: #1e40af;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #fbbf24;
+  --color-neutral: #6b7280;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f3f4f6;
+  --color-brand-red: #e91e4f;
+  --color-brand-lime: #cfe04a;
+}
+
+html {
+  font-family: var(--font-body);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-alt);
+  color: #111827;
+}
+
+h1, h2, h3, .font-heading {
+  font-family: var(--font-heading);
+}
+
+* {
+  box-sizing: border-box;
+}
