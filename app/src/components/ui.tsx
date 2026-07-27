@@ -13,11 +13,11 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+      className={`rounded-2xl border border-line bg-surface p-4 ${className}`}
     >
       {title && (
-        <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-800">
-          {icon}
+        <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-ink">
+          {icon && <span className="text-primary">{icon}</span>}
           {title}
         </h3>
       )}
@@ -26,14 +26,14 @@ export function Card({
   );
 }
 
-const statusStyles: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-600 border-gray-300",
-  submitted: "bg-amber-100 text-amber-700 border-amber-300",
-  approved: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  confirmed: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  rejected: "bg-red-100 text-red-700 border-red-300",
-  Executado: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  Draft: "bg-gray-100 text-gray-600 border-gray-300",
+const statusDot: Record<string, string> = {
+  draft: "bg-ink-faint",
+  submitted: "bg-warning",
+  approved: "bg-secondary",
+  confirmed: "bg-secondary",
+  rejected: "bg-primary",
+  Executado: "bg-secondary",
+  Draft: "bg-ink-faint",
 };
 
 const statusLabels: Record<string, string> = {
@@ -48,26 +48,23 @@ const statusLabels: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-        statusStyles[status] ?? "bg-gray-100 text-gray-600 border-gray-300"
-      }`}
-    >
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs font-medium text-ink-muted">
+      <span className={`h-1.5 w-1.5 rounded-full ${statusDot[status] ?? "bg-ink-faint"}`} />
       {statusLabels[status] ?? status}
     </span>
   );
 }
 
 export function conformanceColor(score: number) {
-  if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-amber-400";
-  return "bg-red-500";
+  if (score >= 80) return "bg-secondary";
+  if (score >= 60) return "bg-warning";
+  return "bg-primary";
 }
 
 export function conformanceTextColor(score: number) {
-  if (score >= 80) return "text-emerald-600";
-  if (score >= 60) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 80) return "text-secondary";
+  if (score >= 60) return "text-warning";
+  return "text-primary";
 }
 
 export function ProgressBar({
@@ -86,7 +83,7 @@ export function ProgressBar({
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={`w-full overflow-hidden rounded-full bg-gray-200 ${
+      className={`w-full overflow-hidden rounded-full bg-surface-2 ${
         size === "sm" ? "h-1.5" : "h-2.5"
       }`}
     >
@@ -100,13 +97,7 @@ export function ProgressBar({
 
 export function TeamBadge({ team }: { team: "Amarelo" | "Azul" }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        team === "Amarelo"
-          ? "bg-amber-100 text-amber-800"
-          : "bg-blue-100 text-blue-900"
-      }`}
-    >
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs font-semibold text-ink-muted">
       <span
         className={`h-2 w-2 rounded-full ${team === "Amarelo" ? "bg-team-amarelo" : "bg-team-azul"}`}
       />
@@ -131,13 +122,13 @@ export function PrimaryButton({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed";
   const variants: Record<string, string> = {
-    primary: "bg-primary text-white hover:bg-primary-dark",
+    primary: "bg-primary text-white hover:bg-primary-hover",
     secondary:
-      "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50",
-    danger: "bg-danger text-white hover:bg-red-600",
-    ghost: "text-gray-600 hover:bg-gray-100",
+      "bg-surface-2 text-ink border border-line hover:border-ink-faint",
+    danger: "bg-primary text-white hover:bg-primary-hover",
+    ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
   };
   return (
     <button
@@ -164,15 +155,15 @@ export function Field({
 }) {
   return (
     <label className="mb-4 block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">
+      <span className="mb-1.5 block text-sm font-medium text-ink-muted">
         {label}
-        {required && <span className="ml-0.5 text-danger">*</span>}
+        {required && <span className="ml-0.5 text-primary">*</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-gray-500">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>}
     </label>
   );
 }
 
 export const inputClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+  "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";

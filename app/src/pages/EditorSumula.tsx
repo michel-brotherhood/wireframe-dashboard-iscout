@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ambiguousMatches } from "../data/mockData";
 import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
+import { Icon } from "../components/Icon";
 
 const BLOCKED_JERSEYS = [24, 51, 69];
 
@@ -70,7 +71,7 @@ export default function EditorSumula() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-xl font-semibold text-gray-900 sm:text-2xl">
+      <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
         Criar Súmula — 02/07/2026 — Team Amarelo
       </h1>
 
@@ -106,22 +107,22 @@ export default function EditorSumula() {
           <Field label="Nome">
             <input className={inputClass} value={newNome} onChange={(e) => setNewNome(e.target.value)} />
           </Field>
-          <label className="mb-4 flex items-center gap-2 text-sm text-gray-700 sm:mb-[9px]">
+          <label className="mb-4 flex items-center gap-2 text-sm text-ink sm:mb-[13px]">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-line bg-surface-2 text-primary focus:ring-primary"
               checked={newStarter}
               onChange={(e) => setNewStarter(e.target.checked)}
             />
             Starter
           </label>
           <PrimaryButton onClick={handleAdd} className="mb-4 sm:mb-4">
-            Adicionar
+            <Icon name="plus" className="h-4 w-4" /> Adicionar
           </PrimaryButton>
         </div>
         {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
+          <p role="alert" className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+            <Icon name="alert" className="h-4 w-4" /> {error}
           </p>
         )}
       </Card>
@@ -130,7 +131,7 @@ export default function EditorSumula() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
                 <th scope="col" className="px-3 py-2">Jersey</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
@@ -140,19 +141,19 @@ export default function EditorSumula() {
             </thead>
             <tbody>
               {roster.map((r, i) => (
-                <tr key={r.jersey} className={`border-b border-gray-100 last:border-0 ${i % 2 === 1 ? "bg-gray-50/60" : ""}`}>
-                  <td className="px-3 py-2 font-medium text-gray-900">{r.jersey}</td>
-                  <td className="px-3 py-2 text-gray-700">{r.nome}</td>
-                  <td className="px-3 py-2 text-gray-700">{r.posicao}</td>
-                  <td className="px-3 py-2 text-emerald-600">{r.starter ? "✓" : "—"}</td>
+                <tr key={r.jersey} className={`border-b border-line-soft last:border-0 ${i % 2 === 1 ? "bg-surface-2/40" : ""}`}>
+                  <td className="px-3 py-2 font-medium text-ink">{r.jersey}</td>
+                  <td className="px-3 py-2 text-ink-muted">{r.nome}</td>
+                  <td className="px-3 py-2 text-ink-muted">{r.posicao}</td>
+                  <td className="px-3 py-2 text-secondary">{r.starter ? <Icon name="check" className="h-4 w-4" /> : "—"}</td>
                   <td className="px-3 py-2 text-right">
                     <button
                       type="button"
                       onClick={() => handleRemove(r.jersey)}
-                      className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-danger"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint hover:bg-primary/10 hover:text-primary"
                       aria-label={`Remover ${r.nome}`}
                     >
-                      ✕
+                      <Icon name="x" className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
@@ -160,7 +161,7 @@ export default function EditorSumula() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-sm font-semibold text-gray-800">
+        <p className="mt-3 text-sm font-semibold text-ink">
           Total: {roster.length} jogadores ({starterCount} starters)
         </p>
       </Card>
@@ -174,32 +175,38 @@ export default function EditorSumula() {
         </PrimaryButton>
       </div>
       {status && (
-        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {status}
+        <p role="status" className="flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
+          <Icon name="check" className="h-4 w-4" /> {status}
         </p>
       )}
 
       {resolved && (
         <Card title="Resultado da Resolução">
           <div className="mb-4 flex flex-wrap gap-4 text-sm">
-            <span className="text-emerald-600">✓ 9 Resolvidos</span>
-            <span className="text-amber-600">⚠️ 2 Ambíguos (precisa validação manual)</span>
-            <span className="text-gray-500">✗ 0 Não encontrados</span>
+            <span className="flex items-center gap-1.5 text-secondary">
+              <Icon name="check" className="h-4 w-4" /> 9 Resolvidos
+            </span>
+            <span className="flex items-center gap-1.5 text-warning">
+              <Icon name="alert" className="h-4 w-4" /> 2 Ambíguos (precisa validação manual)
+            </span>
+            <span className="flex items-center gap-1.5 text-ink-faint">
+              <Icon name="x" className="h-4 w-4" /> 0 Não encontrados
+            </span>
           </div>
 
           <div className="flex flex-col gap-4">
             {ambiguousMatches.map((m) => (
-              <fieldset key={m.jersey} className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                <legend className="px-1 text-sm font-medium text-gray-800">
+              <fieldset key={m.jersey} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
+                <legend className="px-1 text-sm font-medium text-ink">
                   Jersey {m.jersey} — "{m.nome}" → Selecione:
                 </legend>
                 <div className="flex flex-col gap-1.5">
                   {m.opcoes.map((opt) => (
-                    <label key={opt.id} className="flex items-center gap-2 text-sm text-gray-700">
+                    <label key={opt.id} className="flex items-center gap-2 text-sm text-ink">
                       <input
                         type="radio"
                         name={`ambig-${m.jersey}`}
-                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                        className="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
                         checked={selections[m.jersey] === opt.id}
                         onChange={() => setSelections({ ...selections, [m.jersey]: opt.id })}
                       />

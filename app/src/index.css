@@ -11,29 +11,39 @@
   --font-heading: "Unbounded", "Segoe UI", Roboto, sans-serif;
   --font-body: "Segoe UI", Roboto, system-ui, sans-serif;
 
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
+  /* Brand — extracted from marca-principal.png / fundo.jpg in this repo */
+  --color-primary: #e7254d; /* brand pink/red */
+  --color-primary-hover: #c81a3f;
+  --color-secondary: #d3dc61; /* brand lime */
+  --color-warning: #f5b942; /* amber accent, data-viz/status only */
+
+  /* Dark navy shell — derived from fundo.jpg's tech-network background */
+  --color-canvas: #0a1526; /* page background */
+  --color-surface: #101f38; /* card background */
+  --color-surface-2: #182b4a; /* input / hover / alt surface */
+  --color-line: #263a5c; /* default border */
+  --color-line-soft: #1a2c48; /* subtle divider */
+
+  --color-ink: #f5f7fb; /* primary text */
+  --color-ink-muted: #93a4c6; /* secondary text */
+  --color-ink-faint: #5d6e90; /* placeholder / tertiary text */
+
+  /* Team colors — literal data (jersey color), not brand decoration */
   --color-team-amarelo: #fbbf24;
-  --color-team-azul: #1e40af;
-  --color-success: #10b981;
-  --color-danger: #ef4444;
-  --color-warning: #fbbf24;
-  --color-neutral: #6b7280;
-  --color-surface: #ffffff;
-  --color-surface-alt: #f3f4f6;
-  --color-brand-red: #e91e4f;
-  --color-brand-lime: #cfe04a;
+  --color-team-azul: #5b8def;
 }
 
 html {
   font-family: var(--font-body);
-  color-scheme: light;
+  color-scheme: dark;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
-  background: var(--color-surface-alt);
-  color: #111827;
+  overflow-x: clip;
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
 h1, h2, h3, .font-heading {
@@ -42,4 +52,8 @@ h1, h2, h3, .font-heading {
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }

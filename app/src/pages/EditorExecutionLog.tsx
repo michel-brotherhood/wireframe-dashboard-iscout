@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, Field, PrimaryButton, ProgressBar, inputClass } from "../components/ui";
+import { Icon } from "../components/Icon";
 
 interface StageState {
   label: string;
@@ -19,9 +20,9 @@ function deviationInfo(planejado: number, executado: number) {
   const diff = executado - planejado;
   const abs = Math.abs(diff);
   const sign = diff > 0 ? "+" : "";
-  if (abs <= 1) return { text: `${sign}${diff} minuto${abs === 1 ? "" : "s"} (✓ Dentro do esperado)`, color: "text-emerald-600" };
-  if (abs <= 3) return { text: `${sign}${diff} minutos (⚠️ Acima do planejado)`, color: "text-amber-600" };
-  return { text: `${sign}${diff} minutos (⚠️ Desvio significativo)`, color: "text-danger" };
+  if (abs <= 1) return { text: `${sign}${diff} minuto${abs === 1 ? "" : "s"} · dentro do esperado`, color: "text-secondary" };
+  if (abs <= 3) return { text: `${sign}${diff} minutos · acima do planejado`, color: "text-warning" };
+  return { text: `${sign}${diff} minutos · desvio significativo`, color: "text-primary" };
 }
 
 let desvioId = 3;
@@ -74,17 +75,17 @@ export default function EditorExecutionLog() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-heading text-xl font-semibold text-gray-900 sm:text-2xl">
+        <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
           Registrar Execução — 02/07/2026 — Team Amarelo — João
         </h1>
       </div>
 
       <Card>
-        <p className="text-sm text-gray-600">
-          <span className="font-medium text-gray-800">Plano:</span> 02/07/2026 · Ofensiva · {totalPlanejado} min total
+        <p className="text-sm text-ink-muted">
+          <span className="font-medium text-ink">Plano:</span> 02/07/2026 · Ofensiva · {totalPlanejado} min total
         </p>
-        <p className="text-sm text-gray-600">
-          <span className="font-medium text-gray-800">Súmula:</span> ✓ Confirmada · 11 jogadores
+        <p className="text-sm text-ink-muted">
+          <span className="font-medium text-ink">Súmula:</span> Confirmada · 11 jogadores
         </p>
       </Card>
 
@@ -94,8 +95,8 @@ export default function EditorExecutionLog() {
           <Card key={stage.label} title={stage.label}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
-                <span className="mb-1 block text-sm font-medium text-gray-700">Planejado</span>
-                <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">{stage.planejado} minutos</p>
+                <span className="mb-1.5 block text-sm font-medium text-ink-muted">Planejado</span>
+                <p className="rounded-xl border border-line-soft bg-surface-2 px-3 py-2.5 text-sm text-ink-muted">{stage.planejado} minutos</p>
               </div>
               <Field label="Executado (minutos)">
                 <input
@@ -107,8 +108,8 @@ export default function EditorExecutionLog() {
                 />
               </Field>
               <div>
-                <span className="mb-1 block text-sm font-medium text-gray-700">Desvio</span>
-                <p className={`rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium ${dev.color}`}>{dev.text}</p>
+                <span className="mb-1.5 block text-sm font-medium text-ink-muted">Desvio</span>
+                <p className={`rounded-xl border border-line-soft bg-surface-2 px-3 py-2.5 text-sm font-medium ${dev.color}`}>{dev.text}</p>
               </div>
             </div>
             <Field label="Observações">
@@ -124,24 +125,24 @@ export default function EditorExecutionLog() {
 
       <Card>
         <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-semibold text-gray-800">
+          <p className="font-semibold text-ink">
             Total Executado: {totalExecutado} minutos (Planejado: {totalPlanejado} min)
           </p>
-          <p className={`font-semibold ${Math.abs(diffTotal) <= 2 ? "text-emerald-600" : "text-amber-600"}`}>
+          <p className={`font-semibold ${Math.abs(diffTotal) <= 2 ? "text-secondary" : "text-warning"}`}>
             Diferença Total: {diffTotal > 0 ? "+" : ""}
             {diffTotal} minutos
           </p>
         </div>
       </Card>
 
-      <Card title="Desvios Registrados">
-        <button type="button" onClick={addDesvio} className="mb-4 text-sm font-medium text-primary">
-          + Adicionar desvio
+      <Card title="Desvios Registrados" icon={<Icon name="alert" className="h-4 w-4" />}>
+        <button type="button" onClick={addDesvio} className="mb-4 flex items-center gap-1 text-sm font-medium text-primary">
+          <Icon name="plus" className="h-3.5 w-3.5" /> Adicionar desvio
         </button>
         <div className="flex flex-col gap-3">
           {desvios.map((d, i) => (
-            <div key={d.id} className="rounded-lg border border-gray-200 p-3">
-              <p className="mb-2 text-sm font-semibold text-gray-700">Desvio {i + 1}</p>
+            <div key={d.id} className="rounded-xl border border-line-soft bg-surface-2 p-3">
+              <p className="mb-2 text-sm font-semibold text-ink">Desvio {i + 1}</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Field label="Etapa">
                   <select
@@ -176,9 +177,9 @@ export default function EditorExecutionLog() {
               <button
                 type="button"
                 onClick={() => removeDesvio(d.id)}
-                className="mt-1 text-xs font-medium text-danger hover:underline"
+                className="mt-1 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
-                ✕ Remover
+                <Icon name="x" className="h-3.5 w-3.5" /> Remover
               </button>
             </div>
           ))}
@@ -200,14 +201,14 @@ export default function EditorExecutionLog() {
       </div>
 
       {status && (
-        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          {status}
+        <p role="status" className="flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
+          <Icon name="check" className="h-4 w-4" /> {status}
         </p>
       )}
 
       {confirmed && (
-        <Card title="Ao confirmar">
-          <ul className="mb-3 flex flex-col gap-1 text-sm text-gray-600">
+        <Card title="Ao confirmar" icon={<Icon name="bot" className="h-4 w-4" />}>
+          <ul className="mb-3 flex flex-col gap-1 text-sm text-ink-muted">
             <li>• Sistema calcula conformidade: {conformance}%</li>
             <li>• IA gera insights</li>
             <li>• Execution log fica confirmado</li>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
+import { Icon } from "../components/Icon";
 
 const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
 
@@ -9,13 +10,17 @@ const ESTACOES_OPTIONS = ["Com bola", "Sem bola", "Recreativo"];
 function DiagramUpload() {
   return (
     <div className="mb-4">
-      <span className="mb-1 block text-sm font-medium text-gray-700">Diagrama de Campo</span>
+      <span className="mb-1 block text-sm font-medium text-ink-muted">Diagrama de Campo</span>
       <div className="flex flex-wrap gap-2">
-        <PrimaryButton variant="secondary">Upload Diagrama</PrimaryButton>
-        <PrimaryButton variant="secondary">Desenhar no Editor</PrimaryButton>
+        <PrimaryButton variant="secondary">
+          <Icon name="upload" className="h-4 w-4" /> Upload Diagrama
+        </PrimaryButton>
+        <PrimaryButton variant="secondary">
+          <Icon name="edit" className="h-4 w-4" /> Desenhar no Editor
+        </PrimaryButton>
       </div>
-      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-xs text-gray-400 sm:h-40 sm:w-72">
-        Imagem do diagrama (300×300px)
+      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-faint sm:h-40 sm:w-72">
+        Imagem do diagrama · 300×300px
       </div>
     </div>
   );
@@ -34,13 +39,13 @@ function Checklist({
 }) {
   return (
     <fieldset className="mb-4">
-      <legend className="mb-1 text-sm font-medium text-gray-700">{label}</legend>
+      <legend className="mb-1 text-sm font-medium text-ink-muted">{label}</legend>
       <div className="flex flex-col gap-1.5">
         {options.map((opt) => (
-          <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
+          <label key={opt} className="flex items-center gap-2 text-sm text-ink">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-line bg-surface-2 text-primary focus:ring-primary"
               checked={selected.includes(opt)}
               onChange={() => onToggle(opt)}
             />
@@ -49,6 +54,49 @@ function Checklist({
         ))}
       </div>
     </fieldset>
+  );
+}
+
+function DynamicList({
+  label,
+  addLabel,
+  items,
+  onAdd,
+  onUpdate,
+  onRemove,
+}: {
+  label: string;
+  addLabel: string;
+  items: string[];
+  onAdd: () => void;
+  onUpdate: (idx: number, value: string) => void;
+  onRemove: (idx: number) => void;
+}) {
+  return (
+    <div className="mb-4">
+      <span className="mb-1 block text-sm font-medium text-ink-muted">{label}</span>
+      {items.map((v, i) => (
+        <div key={i} className="mb-2 flex items-center gap-2">
+          <input
+            className={inputClass}
+            value={v}
+            aria-label={`${label} ${i + 1}`}
+            onChange={(e) => onUpdate(i, e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => onRemove(i)}
+            aria-label={`Remover ${label.toLowerCase()} ${i + 1}`}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-faint hover:bg-primary/10 hover:text-primary"
+          >
+            <Icon name="x" className="h-4 w-4" />
+          </button>
+        </div>
+      ))}
+      <button type="button" className="flex items-center gap-1 text-sm font-medium text-primary" onClick={onAdd}>
+        <Icon name="plus" className="h-3.5 w-3.5" /> {addLabel}
+      </button>
+    </div>
   );
 }
 
@@ -97,10 +145,14 @@ export default function EditorPlano() {
     setList(list.map((v, i) => (i === idx ? value : v)));
   }
 
+  function removeItem(list: string[], setList: (v: string[]) => void, idx: number) {
+    setList(list.filter((_, i) => i !== idx));
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-heading text-xl font-semibold text-gray-900 sm:text-2xl">
+        <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
           Criar Novo Plano de Aula
         </h1>
       </div>
@@ -125,7 +177,7 @@ export default function EditorPlano() {
         </div>
       </Card>
 
-      <div role="tablist" aria-label="Etapas do plano" className="flex flex-wrap gap-1 rounded-xl border border-gray-200 bg-white p-1">
+      <div role="tablist" aria-label="Etapas do plano" className="flex flex-wrap gap-1 rounded-2xl border border-line bg-surface p-1">
         {TABS.map((t, i) => (
           <button
             key={t}
@@ -133,8 +185,8 @@ export default function EditorPlano() {
             type="button"
             aria-selected={tab === i}
             onClick={() => setTab(i)}
-            className={`flex-1 min-w-[120px] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === i ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100"
+            className={`flex-1 min-w-[120px] rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+              tab === i ? "bg-primary text-white" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
             }`}
           >
             {t}
@@ -170,7 +222,9 @@ export default function EditorPlano() {
           />
           <DiagramUpload />
           <div className="flex justify-end">
-            <PrimaryButton onClick={() => setTab(1)}>Próximo →</PrimaryButton>
+            <PrimaryButton onClick={() => setTab(1)}>
+              Próximo <Icon name="arrowRight" className="h-4 w-4" />
+            </PrimaryButton>
           </div>
         </Card>
       )}
@@ -190,14 +244,14 @@ export default function EditorPlano() {
             />
           </Field>
           <fieldset className="mb-4">
-            <legend className="mb-1 text-sm font-medium text-gray-700">Tipo de Exercício *</legend>
+            <legend className="mb-1 text-sm font-medium text-ink-muted">Tipo de Exercício *</legend>
             <div className="flex flex-wrap gap-4">
               {["Analítico", "Global", "Situacional"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
+                <label key={opt} className="flex items-center gap-2 text-sm text-ink">
                   <input
                     type="radio"
                     name="tipo-exercicio"
-                    className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
                     checked={funcTipo === opt}
                     onChange={() => setFuncTipo(opt)}
                   />
@@ -212,9 +266,11 @@ export default function EditorPlano() {
           <DiagramUpload />
           <div className="flex justify-between">
             <PrimaryButton variant="secondary" onClick={() => setTab(0)}>
-              ← Anterior
+              <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
-            <PrimaryButton onClick={() => setTab(2)}>Próximo →</PrimaryButton>
+            <PrimaryButton onClick={() => setTab(2)}>
+              Próximo <Icon name="arrowRight" className="h-4 w-4" />
+            </PrimaryButton>
           </div>
         </Card>
       )}
@@ -234,42 +290,26 @@ export default function EditorPlano() {
             />
           </Field>
 
-          <div className="mb-4">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Sub-temas (adicione)</span>
-            {subTemas.map((v, i) => (
-              <input
-                key={i}
-                className={`${inputClass} mb-2`}
-                value={v}
-                onChange={(e) => updateItem(subTemas, setSubTemas, i, e.target.value)}
-              />
-            ))}
-            <button type="button" className="text-sm font-medium text-primary" onClick={() => addItem(subTemas, setSubTemas)}>
-              + Adicionar outro
-            </button>
-          </div>
+          <DynamicList
+            label="Sub-temas (adicione)"
+            addLabel="Adicionar outro"
+            items={subTemas}
+            onAdd={() => addItem(subTemas, setSubTemas)}
+            onUpdate={(i, v) => updateItem(subTemas, setSubTemas, i, v)}
+            onRemove={(i) => removeItem(subTemas, setSubTemas, i)}
+          />
+
+          <DynamicList
+            label="Orientações (adicione)"
+            addLabel="Adicionar outra"
+            items={orientacoes}
+            onAdd={() => addItem(orientacoes, setOrientacoes)}
+            onUpdate={(i, v) => updateItem(orientacoes, setOrientacoes, i, v)}
+            onRemove={(i) => removeItem(orientacoes, setOrientacoes, i)}
+          />
 
           <div className="mb-4">
-            <span className="mb-1 block text-sm font-medium text-gray-700">Orientações (adicione)</span>
-            {orientacoes.map((v, i) => (
-              <input
-                key={i}
-                className={`${inputClass} mb-2`}
-                value={v}
-                onChange={(e) => updateItem(orientacoes, setOrientacoes, i, e.target.value)}
-              />
-            ))}
-            <button
-              type="button"
-              className="text-sm font-medium text-primary"
-              onClick={() => addItem(orientacoes, setOrientacoes)}
-            >
-              + Adicionar outra
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <span className="mb-2 block text-sm font-medium text-gray-700">Protocolo de Intervalo</span>
+            <span className="mb-2 block text-sm font-medium text-ink-muted">Protocolo de Intervalo</span>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Field label="Hidratação (min)">
                 <input type="number" className={inputClass} value={hidratacao} onChange={(e) => setHidratacao(Number(e.target.value))} />
@@ -289,9 +329,11 @@ export default function EditorPlano() {
           <DiagramUpload />
           <div className="flex justify-between">
             <PrimaryButton variant="secondary" onClick={() => setTab(1)}>
-              ← Anterior
+              <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
-            <PrimaryButton onClick={() => setTab(3)}>Próximo →</PrimaryButton>
+            <PrimaryButton onClick={() => setTab(3)}>
+              Próximo <Icon name="arrowRight" className="h-4 w-4" />
+            </PrimaryButton>
           </div>
         </Card>
       )}
@@ -306,16 +348,23 @@ export default function EditorPlano() {
             />
           </Field>
 
-          <div className="mb-4 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
-            <span className="font-medium text-gray-700">Total Planejado</span>
-            <span className={`font-semibold ${total >= 30 && total <= 120 ? "text-emerald-600" : "text-danger"}`}>
-              {total} minutos {total >= 30 && total <= 120 ? "✓" : "⚠️ fora do intervalo 30–120min"}
+          <div className="mb-4 flex items-center justify-between rounded-xl border border-line-soft bg-surface-2 px-3 py-2 text-sm">
+            <span className="font-medium text-ink-muted">Total Planejado</span>
+            <span className={`flex items-center gap-1.5 font-semibold ${total >= 30 && total <= 120 ? "text-secondary" : "text-primary"}`}>
+              {total} minutos
+              {total >= 30 && total <= 120 ? (
+                <Icon name="check" className="h-4 w-4" />
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="alert" className="h-4 w-4" /> fora do intervalo 30–120min
+                </span>
+              )}
             </span>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
             <PrimaryButton variant="secondary" onClick={() => setTab(2)}>
-              ← Anterior
+              <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
             <div className="flex flex-col gap-2 sm:flex-row">
               <PrimaryButton variant="secondary" onClick={() => setStatus("Plano salvo como draft.")}>
@@ -330,8 +379,8 @@ export default function EditorPlano() {
             </div>
           </div>
           {status && (
-            <p role="status" className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {status}
+            <p role="status" className="mt-3 flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
+              <Icon name="check" className="h-4 w-4" /> {status}
             </p>
           )}
         </Card>
