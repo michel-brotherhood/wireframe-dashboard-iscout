@@ -4,6 +4,19 @@ import { Icon } from "./Icon";
 
 let initialized = false;
 
+// Rounds node/entity/actor boxes to match the app's rounded-xl/2xl card
+// language instead of mermaid's default sharp-cornered rectangles.
+const ROUNDED_NODE_CSS = `
+  .node rect, .node polygon, .cluster rect,
+  .er.entityBox, .actor, .labelBox, .activation0, .activation1, .activation2 {
+    rx: 10px;
+    ry: 10px;
+  }
+  .node rect, .cluster rect, .er.entityBox, .actor {
+    stroke-width: 1.5px;
+  }
+`;
+
 function ensureInit() {
   if (initialized) return;
   mermaid.initialize({
@@ -11,6 +24,7 @@ function ensureInit() {
     theme: "base",
     securityLevel: "strict",
     fontFamily: '"Segoe UI", Roboto, system-ui, sans-serif',
+    themeCSS: ROUNDED_NODE_CSS,
     themeVariables: {
       background: "#101f38",
       primaryColor: "#182b4a",
@@ -50,7 +64,7 @@ function ensureInit() {
   initialized = true;
 }
 
-export function MermaidDiagram({ source, title }: { source: string; title: string }) {
+export function MermaidDiagram({ source }: { source: string }) {
   ensureInit();
   const reactId = useId().replace(/:/g, "");
   const [svg, setSvg] = useState<string | null>(null);
@@ -75,60 +89,36 @@ export function MermaidDiagram({ source, title }: { source: string; title: strin
     };
   }, [source, reactId]);
 
-  function handleDownload() {
-    if (!svg) return;
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 rounded-xl border border-line bg-surface-2 p-1">
-          <button
-            type="button"
-            onClick={() => setZoom((z) => Math.max(0.4, z - 0.2))}
-            aria-label="Diminuir zoom"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface hover:text-ink"
-          >
-            <Icon name="minus" className="h-3.5 w-3.5" />
-          </button>
-          <span className="w-12 text-center text-xs font-medium text-ink-muted">{Math.round(zoom * 100)}%</span>
-          <button
-            type="button"
-            onClick={() => setZoom((z) => Math.min(2.5, z + 0.2))}
-            aria-label="Aumentar zoom"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface hover:text-ink"
-          >
-            <Icon name="plus" className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoom(1)}
-            className="rounded-lg px-2 py-1.5 text-xs font-medium text-ink-muted hover:bg-surface hover:text-ink"
-          >
-            Reset
-          </button>
-        </div>
+      <div className="flex items-center gap-1 self-end">
         <button
           type="button"
-          onClick={handleDownload}
-          disabled={!svg}
-          className="flex items-center gap-1.5 rounded-xl border border-line bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink disabled:opacity-40"
+          onClick={() => setZoom((z) => Math.max(0.4, z - 0.2))}
+          aria-label="Diminuir zoom"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink"
         >
-          <Icon name="download" className="h-3.5 w-3.5" /> Baixar SVG
+          <Icon name="minus" className="h-3.5 w-3.5" />
+        </button>
+        <span className="w-12 text-center text-xs font-medium text-ink-muted">{Math.round(zoom * 100)}%</span>
+        <button
+          type="button"
+          onClick={() => setZoom((z) => Math.min(2.5, z + 0.2))}
+          aria-label="Aumentar zoom"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2 hover:text-ink"
+        >
+          <Icon name="plus" className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setZoom(1)}
+          className="rounded-lg px-2 py-1.5 text-xs font-medium text-ink-muted hover:bg-surface-2 hover:text-ink"
+        >
+          Reset
         </button>
       </div>
 
-      <div
-        className="overflow-auto rounded-xl border border-line-soft bg-canvas p-6"
-        style={{ minHeight: 240 }}
-      >
+      <div className="overflow-auto rounded-xl bg-canvas p-6" style={{ minHeight: 280 }}>
         {error && (
           <p role="alert" className="flex items-center gap-1.5 text-sm text-primary-text">
             <Icon name="alert" className="h-4 w-4" /> {error}
