@@ -5,6 +5,7 @@ import TreinoDetalhe from "./pages/TreinoDetalhe";
 import EditorPlano from "./pages/EditorPlano";
 import EditorSumula from "./pages/EditorSumula";
 import EditorExecutionLog from "./pages/EditorExecutionLog";
+import Arquitetura from "./pages/Arquitetura";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/planos/novo" element={<EditorPlano />} />
           <Route path="/sumulas/novo" element={<EditorSumula />} />
           <Route path="/execution/novo" element={<EditorExecutionLog />} />
+          <Route path="/arquitetura" element={<Arquitetura />} />
         </Routes>
       </Layout>
     </BrowserRouter>

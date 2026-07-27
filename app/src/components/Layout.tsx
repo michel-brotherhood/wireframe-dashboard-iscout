@@ -12,6 +12,12 @@ const navItems: { to: string; label: string; icon: IconName }[] = [
   { to: "/execution/novo", label: "Registrar Execução", icon: "barChart" },
 ];
 
+const referenceNavItem: { to: string; label: string; icon: IconName } = {
+  to: "/arquitetura",
+  label: "Arquitetura",
+  icon: "network",
+};
+
 export default function Layout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -56,6 +62,18 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {item.label}
               </NavLink>
             ))}
+            <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
+            <NavLink
+              to={referenceNavItem.to}
+              className={({ isActive }) =>
+                `flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
+                }`
+              }
+            >
+              <Icon name={referenceNavItem.icon} className="h-4 w-4" />
+              {referenceNavItem.label}
+            </NavLink>
           </nav>
 
           <button
@@ -89,6 +107,19 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {item.label}
               </NavLink>
             ))}
+            <div className="my-1 h-px bg-line" aria-hidden="true" />
+            <NavLink
+              to={referenceNavItem.to}
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                  isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
+                }`
+              }
+            >
+              <Icon name={referenceNavItem.icon} className="h-4 w-4" />
+              {referenceNavItem.label}
+            </NavLink>
           </nav>
         )}
       </header>
