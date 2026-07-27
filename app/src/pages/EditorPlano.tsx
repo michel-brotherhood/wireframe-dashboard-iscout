@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, Field, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { usePlanos } from "../state/PlanosContext";
+import type { EtapaFuncionamento, Phase, PlanoAula, TeamLabel } from "../types";
 
 const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
 
@@ -105,10 +108,15 @@ function DynamicList({
   );
 }
 
+let novoPlanoSeq = 1;
+
 export default function EditorPlano() {
+  const navigate = useNavigate();
+  const { addPlano } = usePlanos();
   const [tab, setTab] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [data, setData] = useState("2026-07-03");
@@ -210,15 +218,45 @@ export default function EditorPlano() {
         setTab(firstInvalidTab);
       }
       setStatusIsError(true);
+      setJustSubmitted(false);
       setStatus("Corrija os campos obrigatórios destacados antes de submeter.");
       return;
     }
     if (total < 30 || total > 120) {
       setStatusIsError(true);
+      setJustSubmitted(false);
       setStatus("Duração total precisa ficar entre 30 e 120 minutos antes de submeter.");
       return;
     }
+
+    const novoPlano: PlanoAula = {
+      id: `plan-novo-${novoPlanoSeq++}`,
+      sessionDate: data,
+      team: team as TeamLabel,
+      coachName: team === "Amarelo" ? "João Silva" : "Maria Santos",
+      fase: fase as Phase,
+      status: "submitted",
+      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, coordenacao, estacoes },
+      etapaFuncionamento: {
+        objetivo: funcObjetivo,
+        duracaoMin: funcDuracao,
+        tipo: funcTipo as EtapaFuncionamento["tipo"],
+        tema: funcTema,
+      },
+      etapaPrincipal: {
+        objetivo: principalObjetivo,
+        duracaoMin: principalDuracao,
+        subTemas,
+        orientacoes,
+        intervalo: { hidratacaoMin: hidratacao, repousoMin: repouso, instruirMin: instruir, ativarMin: ativar },
+      },
+      observacoes,
+      createdAt: new Date().toISOString(),
+    };
+    addPlano(novoPlano);
+
     setStatusIsError(false);
+    setJustSubmitted(true);
     setStatus("Plano submetido para aprovação.");
   }
 
@@ -286,6 +324,15 @@ export default function EditorPlano() {
           }`}
         >
           <Icon name={statusIsError ? "alert" : "check"} className="h-4 w-4" /> {status}
+          {justSubmitted && (
+            <button
+              type="button"
+              onClick={() => navigate("/planos/aprovacao")}
+              className="ml-1 font-medium underline underline-offset-2"
+            >
+              Ver fila de aprovação →
+            </button>
+          )}
         </p>
       )}
 
@@ -503,6 +550,7 @@ export default function EditorPlano() {
                 variant="secondary"
                 onClick={() => {
                   setStatusIsError(false);
+                  setJustSubmitted(false);
                   setStatus("Plano salvo como draft.");
                 }}
               >

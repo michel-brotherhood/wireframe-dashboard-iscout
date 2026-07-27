@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { planosPendentesIniciais } from "../data/mockData";
 import type { PlanoAula } from "../types";
 import { Card, Field, PrimaryButton, StatusBadge, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { usePlanos } from "../state/PlanosContext";
 
 function formatDate(iso: string) {
   const [, m, d] = iso.split("-");
@@ -22,7 +22,7 @@ function totalPlanejado(p: PlanoAula) {
 }
 
 export default function AprovacaoPlanos() {
-  const [planos, setPlanos] = useState<PlanoAula[]>(planosPendentesIniciais);
+  const { planos, approvePlano, rejectPlano, bulkApprove: bulkApproveCtx } = usePlanos();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -35,13 +35,7 @@ export default function AprovacaoPlanos() {
     .sort((a, b) => (b.approvedAt ?? b.rejectedAt ?? "").localeCompare(a.approvedAt ?? a.rejectedAt ?? ""));
 
   function approveOne(id: string) {
-    setPlanos((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, status: "approved", approvedAt: new Date().toISOString(), approvedBy: "Manager" }
-          : p,
-      ),
-    );
+    approvePlano(id);
     setSelected((prev) => {
       const next = new Set(prev);
       next.delete(id);
@@ -51,13 +45,7 @@ export default function AprovacaoPlanos() {
 
   function bulkApprove() {
     const count = selected.size;
-    setPlanos((prev) =>
-      prev.map((p) =>
-        selected.has(p.id)
-          ? { ...p, status: "approved", approvedAt: new Date().toISOString(), approvedBy: "Manager" }
-          : p,
-      ),
-    );
+    bulkApproveCtx(Array.from(selected));
     setSelected(new Set());
     setStatus(`${count} ${count === 1 ? "plano aprovado" : "planos aprovados"} em lote.`);
   }
@@ -73,13 +61,7 @@ export default function AprovacaoPlanos() {
       setRejectError("Descreva o motivo da rejeição para o treinador.");
       return;
     }
-    setPlanos((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, status: "rejected", rejectedAt: new Date().toISOString(), rejectedReason: rejectReason.trim() }
-          : p,
-      ),
-    );
+    rejectPlano(id, rejectReason.trim());
     setRejectingId(null);
     setRejectReason("");
   }

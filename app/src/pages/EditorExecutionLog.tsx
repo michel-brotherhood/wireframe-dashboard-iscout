@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Field, PrimaryButton, ProgressBar, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
-import { planosDisponiveisParaExecucao } from "../data/mockData";
+import { usePlanos } from "../state/PlanosContext";
 
 interface StageState {
   label: string;
@@ -36,6 +36,8 @@ let desvioId = 3;
 
 export default function EditorExecutionLog() {
   const navigate = useNavigate();
+  const { planos } = usePlanos();
+  const planosDisponiveisParaExecucao = planos.filter((p) => p.status === "approved");
   const [planoId, setPlanoId] = useState("");
   const planoSelecionado = planosDisponiveisParaExecucao.find((p) => p.id === planoId) ?? null;
 
