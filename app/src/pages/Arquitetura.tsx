@@ -53,7 +53,11 @@ export default function Arquitetura() {
           ))}
         </nav>
 
-        <Card title={active.title} icon={<Icon name={kindIcon[active.kind]} className="h-4 w-4" />} className="flex-1">
+        <Card
+          title={active.title}
+          icon={<Icon name={kindIcon[active.kind]} className="h-4 w-4" />}
+          className="min-w-0 flex-1"
+        >
           <p className="mb-4 text-sm text-ink-muted">{active.description}</p>
           <MermaidDiagram key={active.id} source={active.source} />
         </Card>

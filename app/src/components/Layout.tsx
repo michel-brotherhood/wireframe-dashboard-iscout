@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import logo from "../assets/brand/marca-principal.png";
 import logoCompact from "../assets/brand/marca-compacta.png";
@@ -19,18 +19,36 @@ const referenceNavItem: { to: string; label: string; icon: IconName } = {
   icon: "network",
 };
 
+// Bottom tab bar (mobile only): the two most-checked destinations on each
+// side of a raised "Novo Plano" FAB — the primary create action and the
+// contract-before-execution gate (RF2/RF5) this app exists to enforce.
+const bottomTabsLeft: { to: string; label: string; icon: IconName }[] = [
+  { to: "/", label: "Início", icon: "lineChart" },
+  { to: "/planos/aprovacao", label: "Aprovação", icon: "stamp" },
+];
+const bottomTabsRight: { to: string; label: string; icon: IconName }[] = [
+  { to: "/sumulas/novo", label: "Súmula", icon: "ball" },
+  { to: "/execution/novo", label: "Execução", icon: "barChart" },
+];
+
+function BottomTabLink({ to, label, icon }: { to: string; label: string; icon: IconName }) {
+  return (
+    <NavLink
+      to={to}
+      end={to === "/"}
+      className={({ isActive }) =>
+        `flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${
+          isActive ? "text-primary-text" : "text-ink-faint hover:text-ink-muted"
+        }`
+      }
+    >
+      <Icon name={icon} className="h-5 w-5" />
+      {label}
+    </NavLink>
+  );
+}
+
 export default function Layout({ children }: { children: ReactNode }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-canvas">
       <a
@@ -77,57 +95,50 @@ export default function Layout({ children }: { children: ReactNode }) {
             </NavLink>
           </nav>
 
-          <button
-            type="button"
-            className="rounded-lg border border-line p-2 text-ink-muted md:hidden"
-            aria-label={menuOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
+          <NavLink
+            to={referenceNavItem.to}
+            aria-label="Arquitetura do sistema (referência técnica)"
+            className={({ isActive }) =>
+              `flex h-9 w-9 items-center justify-center rounded-lg border border-line md:hidden ${
+                isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
+              }`
+            }
           >
-            <Icon name={menuOpen ? "x" : "menu"} className="h-5 w-5" />
-          </button>
+            <Icon name={referenceNavItem.icon} className="h-4 w-4" />
+          </NavLink>
         </div>
-
-        {menuOpen && (
-          <nav
-            className="border-t border-line bg-surface px-4 py-2 md:hidden"
-            aria-label="Navegação principal (mobile)"
-          >
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                    isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
-                  }`
-                }
-              >
-                <Icon name={item.icon} className="h-4 w-4" />
-                {item.label}
-              </NavLink>
-            ))}
-            <div className="my-1 h-px bg-line" aria-hidden="true" />
-            <NavLink
-              to={referenceNavItem.to}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                  isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
-                }`
-              }
-            >
-              <Icon name={referenceNavItem.icon} className="h-4 w-4" />
-              {referenceNavItem.label}
-            </NavLink>
-          </nav>
-        )}
       </header>
 
-      <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main id="main-content" className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 md:pb-6">
         {children}
       </main>
+
+      <nav
+        aria-label="Navegação principal (mobile)"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-center px-2 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5">
+          {bottomTabsLeft.map((item) => (
+            <BottomTabLink key={item.to} {...item} />
+          ))}
+
+          <NavLink
+            to="/planos/novo"
+            aria-label="Criar novo plano de aula"
+            className={({ isActive }) =>
+              `-mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-lg shadow-primary/30 ring-4 ring-canvas transition-colors ${
+                isActive ? "bg-primary-active" : "bg-primary-hover"
+              }`
+            }
+          >
+            <Icon name="plus" className="h-6 w-6" />
+          </NavLink>
+
+          {bottomTabsRight.map((item) => (
+            <BottomTabLink key={item.to} {...item} />
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

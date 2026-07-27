@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import mermaid from "mermaid";
 import { Icon } from "./Icon";
 
@@ -64,22 +64,60 @@ function ensureInit() {
   initialized = true;
 }
 
+interface NaturalSize {
+  width: number;
+  height: number;
+}
+
+// Mermaid's <svg> ships as width="100%" with an inline `max-width` capped to
+// its own natural (often tiny relative to the card) size. That percentage
+// width is meaningless inside our zoomable `width: max-content` wrapper —
+// Chrome resolves the indeterminate case by falling back to the default
+// replaced-element size (300×150), not the diagram's real size. Reading the
+// viewBox and writing back an explicit pixel width/height sidesteps that.
+function parseNaturalSize(svgMarkup: string): NaturalSize | null {
+  // viewBox is "minX minY width height" — sequence diagrams use a non-zero
+  // origin (e.g. "-50 -10 1710 1248"), so only the last two numbers matter.
+  const match = svgMarkup.match(/viewBox="[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)"/);
+  if (!match) return null;
+  return { width: parseFloat(match[1]), height: parseFloat(match[2]) };
+}
+
+function withExplicitSize(svgMarkup: string, size: NaturalSize): string {
+  return svgMarkup.replace(/^(<svg\b[^>]*)>/, (_full, openTag: string) => {
+    let tag = openTag.replace(/\swidth="[^"]*"/, "").replace(/\sheight="[^"]*"/, "");
+    if (/style="[^"]*"/.test(tag)) {
+      tag = tag.replace(
+        /style="([^"]*)"/,
+        (_m, style: string) => `style="${style.replace(/max-width:[^;]*;?/i, "").trim()}"`,
+      );
+    }
+    return `${tag} width="${size.width}" height="${size.height}">`;
+  });
+}
+
 export function MermaidDiagram({ source }: { source: string }) {
   ensureInit();
   const reactId = useId().replace(/:/g, "");
   const [svg, setSvg] = useState<string | null>(null);
+  const [naturalSize, setNaturalSize] = useState<NaturalSize | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const fitZoomRef = useRef(1);
 
   useEffect(() => {
     let cancelled = false;
     setSvg(null);
+    setNaturalSize(null);
     setError(null);
-    setZoom(1);
     mermaid
       .render(`mmd-${reactId}`, source)
       .then(({ svg }) => {
-        if (!cancelled) setSvg(svg);
+        if (cancelled) return;
+        const size = parseNaturalSize(svg);
+        setNaturalSize(size);
+        setSvg(size ? withExplicitSize(svg, size) : svg);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Falha ao renderizar diagrama.");
@@ -88,6 +126,18 @@ export function MermaidDiagram({ source }: { source: string }) {
       cancelled = true;
     };
   }, [source, reactId]);
+
+  // Mermaid renders each diagram at its own natural size, which is usually
+  // much narrower than the card. Scale it up to fill the available width —
+  // but never shrink it below native size, so it stays readable (with
+  // horizontal scroll) on narrow phone screens instead of going tiny.
+  useEffect(() => {
+    if (!svg || !naturalSize || !measureRef.current) return;
+    const availableWidth = measureRef.current.clientWidth;
+    const fit = naturalSize.width > 0 ? Math.min(1.8, Math.max(1, availableWidth / naturalSize.width)) : 1;
+    fitZoomRef.current = fit;
+    setZoom(fit);
+  }, [svg, naturalSize]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -111,7 +161,7 @@ export function MermaidDiagram({ source }: { source: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setZoom(1)}
+          onClick={() => setZoom(fitZoomRef.current)}
           className="rounded-lg px-2 py-1.5 text-xs font-medium text-ink-muted hover:bg-surface-2 hover:text-ink"
         >
           Reset
@@ -126,10 +176,12 @@ export function MermaidDiagram({ source }: { source: string }) {
         )}
         {!svg && !error && <p className="text-sm text-ink-faint">Renderizando diagrama…</p>}
         {svg && (
-          <div
-            style={{ transform: `scale(${zoom})`, transformOrigin: "top left", width: "max-content" }}
-            dangerouslySetInnerHTML={{ __html: svg }}
-          />
+          <div ref={measureRef}>
+            <div
+              style={{ transform: `scale(${zoom})`, transformOrigin: "top left", width: "max-content" }}
+              dangerouslySetInnerHTML={{ __html: svg }}
+            />
+          </div>
         )}
       </div>
     </div>
