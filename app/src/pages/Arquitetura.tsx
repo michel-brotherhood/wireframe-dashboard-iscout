@@ -33,7 +33,7 @@ export default function Arquitetura() {
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav
           aria-label="Selecionar diagrama"
-          className="flex gap-2 overflow-x-auto pb-1 lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-visible lg:pb-0"
+          className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-visible lg:pb-0"
         >
           {diagrams.map((d) => (
             <button

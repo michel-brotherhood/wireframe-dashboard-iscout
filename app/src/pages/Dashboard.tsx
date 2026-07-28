@@ -248,7 +248,47 @@ export default function Dashboard() {
       </Card>
 
       <Card title="Últimos Treinos" icon={<Icon name="calendar" className="h-4 w-4" />} className="p-0 sm:p-0">
-        <div className="overflow-x-auto">
+        {/* Mobile (<640px): tabela min-w-[640px] nunca cabe na viewport — em vez de
+            depender só de overflow-x-auto (que o Chrome mobile pode "encadear" para
+            um arraste horizontal da página inteira), a tabela some e vira lista de
+            cards, eliminando a causa raiz do overflow nessa faixa de largura. */}
+        <div className="flex flex-col gap-2 p-3 sm:hidden">
+          {filteredTreinos.map((t) => (
+            <div
+              key={t.id}
+              data-testid="treino-card"
+              onClick={() => navigate(`/treinos/${t.id}`)}
+              tabIndex={0}
+              role="link"
+              aria-label={`Ver detalhes do treino de ${formatDate(t.sessionDate)}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") navigate(`/treinos/${t.id}`);
+              }}
+              className="cursor-pointer rounded-xl border border-line-soft bg-surface-2 p-3 outline-none hover:border-primary/40 focus-visible:bg-primary/10"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-ink">{formatDate(t.sessionDate)}</p>
+                <Icon name="arrowRight" className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+              </div>
+              <p className="mt-1 text-sm text-ink-muted">
+                {t.categoria} · {t.turma}
+              </p>
+              <p className="text-sm text-ink-muted">{t.coachName}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <StatusBadge status={t.plano.status} />
+                {treinoSemPlanoAprovado(t) && (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-text">
+                    Sem plano aprovado
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet/desktop (≥640px): tabela completa, com scroll horizontal contido
+            (overscroll-x-contain) para não propagar o gesto pra página. */}
+        <div className="hidden overflow-x-auto overscroll-x-contain sm:block">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
