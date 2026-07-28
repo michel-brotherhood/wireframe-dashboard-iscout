@@ -111,6 +111,10 @@ export default function AprovacaoPlanos() {
             <span className="font-medium text-ink">Tema:</span> {viewing.tema} · <span className="font-medium text-ink">Subtema:</span>{" "}
             {viewing.subtema}
           </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            <span className="font-medium text-ink">Período:</span> {viewing.periodo} · <span className="font-medium text-ink">Semana:</span>{" "}
+            {viewing.semana}
+          </p>
         </div>
 
         {status && (
@@ -241,7 +245,7 @@ export default function AprovacaoPlanos() {
                         <StatusBadge status={p.status} />
                       </div>
                       <p className="text-sm text-ink-muted">
-                        {p.unidade} · Treinador: {p.coachName} · Total Planejado: {totalPlanejado(p)} min
+                        {p.unidade} · Treinador: {p.coachName} · {p.periodo} · {p.semana} · Total Planejado: {totalPlanejado(p)} min
                       </p>
                       <p className="mt-1 text-sm">
                         <span className="text-ink-muted">Prazo: {formatDateTime(p.deadlineAt)} · </span>

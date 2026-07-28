@@ -63,6 +63,8 @@ export interface PlanoAula {
   /** Horário da sessão, formato HH:mm — base do cálculo do prazo (sessão - 24h). */
   horario: string;
   unidade: string;
+  periodo: string;
+  semana: string;
   categoria: Categoria;
   turma: Turma;
   /** Cor do colete — contexto de súmula, não é elemento pedagógico principal. */

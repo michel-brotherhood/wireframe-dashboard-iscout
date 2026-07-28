@@ -105,9 +105,13 @@ export default function TreinoDetalhe() {
           </span>
         </div>
 
-        <p className="mb-3 text-sm text-ink-muted">
+        <p className="mb-1 text-sm text-ink-muted">
           <span className="font-medium text-ink">Tema:</span> {plano.tema} · <span className="font-medium text-ink">Subtema:</span>{" "}
           {plano.subtema} · <span className="font-medium text-ink">Horário:</span> {plano.horario}
+        </p>
+        <p className="mb-3 text-sm text-ink-muted">
+          <span className="font-medium text-ink">Período:</span> {plano.periodo} · <span className="font-medium text-ink">Semana:</span>{" "}
+          {plano.semana}
         </p>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

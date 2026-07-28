@@ -1,16 +1,19 @@
 import type { Treino, PlanoAula, MatchSumula, ExecutionLog, Phase } from "../types";
 
-// "Agora" fixo do mundo mock — usado para calcular prazos vencidos ("fora do
-// prazo") sem depender do relógio real, mantendo os dados determinísticos.
-// Centralizado aqui (não espalhado em `new Date()`) para ser mockável.
-export const NOW_MOCK = "2026-07-02T12:00:00";
-
-export function getNow(): Date {
-  return new Date(NOW_MOCK);
+// "Agora" real do sistema — nunca uma data congelada. Centralizado aqui (em
+// vez de `new Date()` espalhado pelo código) para que toda comparação com o
+// instante atual passe por um único ponto. `now` é opcional e só existe para
+// testes injetarem um instante determinístico — a interface real sempre usa
+// o relógio real por padrão.
+export function getNow(now?: Date): Date {
+  return now ?? new Date();
 }
 
-export function isPastDeadline(plano: PlanoAula, now: string = NOW_MOCK) {
-  return plano.deadlineAt < now && (plano.status === "draft" || plano.status === "submitted" || plano.status === "changes_requested");
+export function isPastDeadline(plano: PlanoAula, now: Date = getNow()) {
+  return (
+    new Date(plano.deadlineAt).getTime() < now.getTime() &&
+    (plano.status === "draft" || plano.status === "submitted" || plano.status === "changes_requested")
+  );
 }
 
 // Prazo limite = data/horário da sessão - 24h. Nunca fixo (ex.: "véspera às
@@ -24,8 +27,8 @@ export function calcDeadline(sessionDate: string, horario: string): string {
 
 // Tempo restante/atraso em relação ao prazo limite — usado no cabeçalho do
 // plano e na fila de Aprovações. `now` é injetável para permitir mock/teste.
-export function prazoLabel(deadlineAt: string, now: string = NOW_MOCK) {
-  const diffH = Math.round((new Date(deadlineAt).getTime() - new Date(now).getTime()) / 3600000);
+export function prazoLabel(deadlineAt: string, now: Date = getNow()) {
+  const diffH = Math.round((new Date(deadlineAt).getTime() - now.getTime()) / 3600000);
   if (diffH >= 24) return { text: `Faltam ${Math.round(diffH / 24)}d`, tone: "text-ink-muted" };
   if (diffH >= 0) return { text: `Faltam ${diffH}h`, tone: diffH <= 6 ? "text-warning" : "text-ink-muted" };
   const atraso = Math.abs(diffH);
@@ -35,6 +38,27 @@ export function prazoLabel(deadlineAt: string, now: string = NOW_MOCK) {
 const DIAS_SEMANA = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 export function diaDaSemana(sessionDate: string): string {
   return DIAS_SEMANA[new Date(`${sessionDate}T00:00:00`).getDay()];
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+// Data (YYYY-MM-DD) do dia real, usada como referência de "hoje" na interface
+// (filtros, cálculos) — nunca uma data fixa de demonstração.
+export function todayDateString(now: Date = getNow()): string {
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+// Data/horário padrão sugerido para uma nova sessão no Editor de Plano:
+// sempre dinâmico (agora + 48h), nunca uma data fixa de demonstração — só
+// assim o cálculo do prazo (sessão - 24h) nasce válido por padrão.
+export function defaultSessionDateTime(now: Date = getNow()): { date: string; time: string } {
+  const d = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  return {
+    date: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+  };
 }
 
 // Catálogo de temas/subtemas pedagógicos — depende da fase escolhida no
@@ -73,6 +97,8 @@ const plano0207: PlanoAula = {
   sessionDate: "2026-07-02",
   horario: "16:00",
   unidade: "Atibaia",
+  periodo: "Tarde",
+  semana: "Semana 1",
   categoria: "Sub-15",
   turma: "Turma A",
   team: "Amarelo",
@@ -327,7 +353,7 @@ export const planosPendentesIniciais: PlanoAula[] = [
     team: "Amarelo",
     coachName: "João Silva",
     status: "submitted",
-    // Prazo já vencido em relação ao NOW_MOCK — alimenta o card/filtro "Fora do prazo".
+    // sessionDate fixo no passado — alimenta o card/filtro "Fora do prazo" de forma estável.
     deadlineAt: calcDeadline("2026-06-30", "16:00"),
     createdAt: "2026-06-29T15:45:00",
     approvedAt: undefined,

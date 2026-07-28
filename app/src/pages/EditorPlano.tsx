@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, Field, IntervaloFlow, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
-import { calcDeadline, diaDaSemana, FASE_TEMAS, NOW_MOCK, prazoLabel } from "../data/mockData";
+import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
 import type { Categoria, Estacao, Phase, PlanoAula, TeamLabel, TipoEstacao, Turma } from "../types";
 
 const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"] as const;
@@ -140,8 +140,9 @@ export default function EditorPlano() {
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [data, setData] = useState("2026-07-03");
-  const [horario, setHorario] = useState("16:00");
+  const [defaultSession] = useState(() => defaultSessionDateTime());
+  const [data, setData] = useState(defaultSession.date);
+  const [horario, setHorario] = useState(defaultSession.time);
   const [unidade] = useState("Atibaia");
   const [periodo, setPeriodo] = useState("Tarde");
   const [semana, setSemana] = useState("Semana 1");
@@ -235,7 +236,7 @@ export default function EditorPlano() {
     if (!horario) e.horario = "Informe o horário da sessão.";
     if (data && horario) {
       const dl = calcDeadline(data, horario);
-      if (dl < NOW_MOCK) {
+      if (new Date(dl).getTime() < getNow().getTime()) {
         e.data = `Prazo de 24h já vencido para esse horário — prazo limite seria ${formatDateTime(dl)}.`;
       }
     }
@@ -298,6 +299,8 @@ export default function EditorPlano() {
       sessionDate: data,
       horario,
       unidade,
+      periodo,
+      semana,
       categoria,
       turma,
       team,

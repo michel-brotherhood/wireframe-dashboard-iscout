@@ -15,6 +15,20 @@ interface Row {
   starter: boolean;
 }
 
+// Matrícula válida e única já identifica o atleta — resolve automaticamente.
+// Sem matrícula, o nome precisa ser conferido contra o cadastro: se bate com
+// mais de um cadastro conhecido, fica ambíguo até o treinador escolher qual;
+// se não bate com nenhum, o atleta não é encontrado. Em ambos os casos a
+// confirmação da escalação fica bloqueada até resolver.
+type ResolutionStatus = "resolved" | "ambiguous" | "not_found";
+
+function resolutionStatus(row: Row, selections: Record<number, string>): ResolutionStatus {
+  if (row.matricula.trim()) return "resolved";
+  const match = ambiguousMatches.find((m) => m.nome === row.nome);
+  if (!match) return "not_found";
+  return selections[row.jersey] ? "resolved" : "ambiguous";
+}
+
 const initialRoster: Row[] = [
   { jersey: 1, nome: "João Silva", posicao: "Goleiro", matricula: "1001", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true },
@@ -45,8 +59,8 @@ export default function EditorSumula() {
     const jerseyNum = Number(newJersey);
     setError(null);
 
-    if (!newJersey || !newNome.trim() || !newMatricula.trim()) {
-      setError("Preencha número do colete, nome e matrícula do atleta.");
+    if (!newJersey || !newNome.trim()) {
+      setError("Preencha número do colete e nome do atleta.");
       return;
     }
     if (jerseyNum < 1 || jerseyNum > 99) {
@@ -78,8 +92,14 @@ export default function EditorSumula() {
   const hasDuplicateJersey = jerseySet.size !== roster.length;
   const hasInvalidNumbers = roster.some((r) => !Number.isInteger(r.jersey) || r.jersey < 1 || r.jersey > 99);
   const hasEmptyNome = roster.some((r) => !r.nome.trim());
-  const hasPendingAmbiguous = resolved && Object.keys(selections).length < ambiguousMatches.length;
-  const canConfirm = roster.length > 0 && !hasDuplicateJersey && !hasInvalidNumbers && !hasEmptyNome && !hasPendingAmbiguous;
+
+  const statuses = roster.map((row) => ({ row, status: resolutionStatus(row, selections) }));
+  const pendingAmbiguous = statuses.filter((s) => s.status === "ambiguous");
+  const notFound = statuses.filter((s) => s.status === "not_found");
+  const allAthletesResolved = statuses.every((s) => s.status === "resolved");
+
+  const canConfirm =
+    roster.length > 0 && !hasDuplicateJersey && !hasInvalidNumbers && !hasEmptyNome && allAthletesResolved;
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,7 +146,7 @@ export default function EditorSumula() {
           <Field label="Nome">
             <input className={inputClass} value={newNome} onChange={(e) => setNewNome(e.target.value)} />
           </Field>
-          <Field label="Matrícula">
+          <Field label="Matrícula" hint="Sem matrícula, o nome precisa passar por Resolver Nomes.">
             <input className={inputClass} value={newMatricula} onChange={(e) => setNewMatricula(e.target.value)} />
           </Field>
           <label className="mb-4 flex items-center gap-2 text-sm text-ink sm:mb-[13px]">
@@ -194,7 +214,8 @@ export default function EditorSumula() {
             {hasEmptyNome && "Há atletas sem nome preenchido. "}
             {hasInvalidNumbers && "Há números de colete inválidos. "}
             {hasDuplicateJersey && "Há números de colete duplicados. "}
-            {hasPendingAmbiguous && "Ainda há nomes ambíguos pendentes de resolução."}
+            {pendingAmbiguous.length > 0 && "Ainda há nomes ambíguos pendentes de resolução. "}
+            {notFound.length > 0 && "Há atletas não encontrados no cadastro — informe a matrícula ou resolva o nome."}
           </p>
         )}
       </Card>
@@ -217,45 +238,57 @@ export default function EditorSumula() {
         <Card title="Resultado da Resolução">
           <div className="mb-4 flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5 text-secondary">
-              <Icon name="check" className="h-4 w-4" /> 9 Resolvidos
+              <Icon name="check" className="h-4 w-4" /> {statuses.filter((s) => s.status === "resolved").length} Resolvidos
             </span>
             <span className="flex items-center gap-1.5 text-warning">
-              <Icon name="alert" className="h-4 w-4" /> 2 Ambíguos (precisa validação manual)
+              <Icon name="alert" className="h-4 w-4" /> {pendingAmbiguous.length} Ambíguos (precisa validação manual)
             </span>
             <span className="flex items-center gap-1.5 text-ink-muted">
-              <Icon name="x" className="h-4 w-4" /> 0 Não encontrados
+              <Icon name="x" className="h-4 w-4" /> {notFound.length} Não encontrados
             </span>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {ambiguousMatches.map((m) => (
-              <fieldset key={m.jersey} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
-                <legend className="px-1 text-sm font-medium text-ink">
-                  Colete {m.jersey} — "{m.nome}" → Selecione:
-                </legend>
-                <div className="flex flex-col gap-1.5">
-                  {m.opcoes.map((opt) => (
-                    <label key={opt.id} className="flex items-center gap-2 text-sm text-ink">
-                      <input
-                        type="radio"
-                        name={`ambig-${m.jersey}`}
-                        className="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
-                        checked={selections[m.jersey] === opt.id}
-                        onChange={() => setSelections({ ...selections, [m.jersey]: opt.id })}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <PrimaryButton disabled={Object.keys(selections).length < ambiguousMatches.length}>
-              Confirmar Seleções
-            </PrimaryButton>
-          </div>
+          {pendingAmbiguous.length === 0 && notFound.length === 0 ? (
+            <p className="flex items-center gap-1.5 text-sm text-secondary">
+              <Icon name="check" className="h-4 w-4" /> Todos os atletas foram resolvidos.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {pendingAmbiguous.map(({ row }) => {
+                const match = ambiguousMatches.find((m) => m.nome === row.nome);
+                if (!match) return null;
+                return (
+                  <fieldset key={row.jersey} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
+                    <legend className="px-1 text-sm font-medium text-ink">
+                      Colete {row.jersey} — "{row.nome}" → Selecione:
+                    </legend>
+                    <div className="flex flex-col gap-1.5">
+                      {match.opcoes.map((opt) => (
+                        <label key={opt.id} className="flex items-center gap-2 text-sm text-ink">
+                          <input
+                            type="radio"
+                            name={`ambig-${row.jersey}`}
+                            className="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
+                            checked={selections[row.jersey] === opt.id}
+                            onChange={() => setSelections({ ...selections, [row.jersey]: opt.id })}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+              {notFound.length > 0 && (
+                <p className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-text">
+                  <Icon name="alert" className="h-4 w-4 shrink-0" />
+                  {notFound.map((s) => `Colete ${s.row.jersey} — "${s.row.nome}"`).join(", ")} não{" "}
+                  {notFound.length === 1 ? "foi encontrado" : "foram encontrados"} no cadastro. Informe a matrícula do
+                  atleta para confirmar.
+                </p>
+              )}
+            </div>
+          )}
         </Card>
       )}
     </div>
