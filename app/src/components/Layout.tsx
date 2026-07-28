@@ -45,7 +45,7 @@ function RoleSelect({ className = "" }: { className?: string }) {
       value={role}
       onChange={(e) => setRole(e.target.value as Role)}
       aria-label="Perfil de visualização (demonstração, sem autenticação real)"
-      className={`rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink [color-scheme:dark] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 ${className}`}
+      className={`min-h-[44px] rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink [color-scheme:dark] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 ${className}`}
     >
       {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
         <option key={r} value={r}>
@@ -151,7 +151,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Arquitetura do sistema no Mermaid (abre em nova aba)"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-muted md:hidden"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink-muted md:hidden"
               >
                 <Icon name={referenceNavItem.icon} className="h-4 w-4" />
               </a>

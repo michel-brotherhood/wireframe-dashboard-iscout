@@ -244,8 +244,9 @@ export default function AprovacaoPlanos() {
                         </p>
                         <StatusBadge status={p.status} />
                       </div>
-                      <p className="text-sm text-ink-muted">
-                        {p.unidade} · Treinador: {p.coachName} · {p.periodo} · {p.semana} · Total Planejado: {totalPlanejado(p)} min
+                      <p className="text-sm text-ink-muted [&>span]:whitespace-nowrap">
+                        <span>{p.unidade}</span> · <span>Treinador: {p.coachName}</span> · <span>{p.periodo}</span> ·{" "}
+                        <span>{p.semana}</span> · <span>Total Planejado: {totalPlanejado(p)} min</span>
                       </p>
                       <p className="mt-1 text-sm">
                         <span className="text-ink-muted">Prazo: {formatDateTime(p.deadlineAt)} · </span>
@@ -283,7 +284,7 @@ export default function AprovacaoPlanos() {
                   <span className="font-medium text-ink">
                     {formatDate(p.sessionDate)} · {p.categoria} · {p.turma} · {p.coachName}
                   </span>
-                  <span className="ml-auto text-ink-muted">
+                  <span className="w-full text-ink-muted sm:ml-auto sm:w-auto sm:text-right">
                     {p.status === "approved"
                       ? `Aprovado em ${formatDateTime(p.approvedAt)} por ${p.approvedBy}`
                       : p.status === "cancelled"

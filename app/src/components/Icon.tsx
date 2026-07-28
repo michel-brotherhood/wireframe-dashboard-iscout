@@ -97,6 +97,8 @@ const paths: Record<string, ReactNode> = {
       <path d="M15 3h6v6M10 14 21 3" />
     </>
   ),
+  filter: <path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
 };
 
 export type IconName = keyof typeof paths;
