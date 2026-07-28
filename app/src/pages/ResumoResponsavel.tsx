@@ -37,7 +37,9 @@ export default function ResumoResponsavel() {
         <div className="flex flex-col gap-3 text-sm">
           <div>
             <p className="text-ink-muted">Tema trabalhado</p>
-            <p className="font-medium text-ink">{plano.etapaFuncionamento.tema}</p>
+            <p className="font-medium text-ink">
+              {plano.tema} · {plano.subtema}
+            </p>
           </div>
           <div>
             <p className="text-ink-muted">Objetivo pedagógico</p>

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { PlanoAula } from "../types";
-import { Card, Field, PrimaryButton, StatusBadge, inputClass } from "../components/ui";
+import { Card, Field, IntervaloFlow, PrimaryButton, StatusBadge, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
-import { NOW_MOCK } from "../data/mockData";
+import { prazoLabel } from "../data/mockData";
 
 function formatDate(iso: string) {
   const [, m, d] = iso.split("-");
@@ -19,15 +19,7 @@ function formatDateTime(iso?: string) {
 }
 
 function totalPlanejado(p: PlanoAula) {
-  return p.etapaInicial.duracaoMin + p.etapaFuncionamento.duracaoMin + p.etapaPrincipal.duracaoMin;
-}
-
-function prazoInfo(plano: PlanoAula) {
-  const diffH = Math.round((new Date(plano.deadlineAt).getTime() - new Date(NOW_MOCK).getTime()) / 3600000);
-  if (diffH >= 24) return { text: `Faltam ${Math.round(diffH / 24)}d`, tone: "text-ink-muted" };
-  if (diffH >= 0) return { text: `Faltam ${diffH}h`, tone: diffH <= 6 ? "text-warning" : "text-ink-muted" };
-  const atraso = Math.abs(diffH);
-  return { text: atraso < 24 ? `Atrasado ${atraso}h` : `Atrasado ${Math.round(atraso / 24)}d`, tone: "text-primary-text" };
+  return p.etapaInicial.duracaoMin + p.etapaFundamentacao.duracaoMin + p.etapaPrincipal.duracaoMin;
 }
 
 export default function AprovacaoPlanos() {
@@ -95,7 +87,7 @@ export default function AprovacaoPlanos() {
   }
 
   if (viewing) {
-    const prazo = prazoInfo(viewing);
+    const prazo = prazoLabel(viewing.deadlineAt);
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -112,8 +104,12 @@ export default function AprovacaoPlanos() {
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
             <StatusBadge status={viewing.status} />
-            {viewing.unidade} · {viewing.coachName} ·{" "}
+            {viewing.unidade} · {viewing.coachName} · {viewing.horario} ·{" "}
             <span className={`font-medium ${prazo.tone}`}>Prazo: {prazo.text} ({formatDateTime(viewing.deadlineAt)})</span>
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            <span className="font-medium text-ink">Tema:</span> {viewing.tema} · <span className="font-medium text-ink">Subtema:</span>{" "}
+            {viewing.subtema}
           </p>
         </div>
 
@@ -128,20 +124,27 @@ export default function AprovacaoPlanos() {
             <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
               <p className="text-sm font-semibold text-ink">Etapa Inicial (Aquecimento) — {viewing.etapaInicial.duracaoMin} min</p>
               <p className="mt-1 text-sm text-ink-muted">Objetivo: {viewing.etapaInicial.objetivo}</p>
-              <p className="text-sm text-ink-muted">Coordenação: {viewing.etapaInicial.coordenacao.join(", ")}</p>
-              <p className="text-sm text-ink-muted">Estações: {viewing.etapaInicial.estacoes.join(", ")}</p>
+              <p className="mt-2 text-sm font-medium text-ink">Estação 1 — {viewing.etapaInicial.estacao1.nome}</p>
+              <p className="text-sm text-ink-muted">
+                {viewing.etapaInicial.estacao1.tipo} · {viewing.etapaInicial.estacao1.duracaoMin} min
+              </p>
+              <p className="mt-2 text-sm font-medium text-ink">Estação 2 — {viewing.etapaInicial.estacao2.nome}</p>
+              <p className="text-sm text-ink-muted">
+                {viewing.etapaInicial.estacao2.tipo} · {viewing.etapaInicial.estacao2.duracaoMin} min
+              </p>
             </div>
             <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
-              <p className="text-sm font-semibold text-ink">Etapa Funcionamento — {viewing.etapaFuncionamento.duracaoMin} min</p>
-              <p className="mt-1 text-sm text-ink-muted">Objetivo: {viewing.etapaFuncionamento.objetivo}</p>
-              <p className="text-sm text-ink-muted">Tipo: {viewing.etapaFuncionamento.tipo}</p>
-              <p className="text-sm text-ink-muted">Tema: {viewing.etapaFuncionamento.tema}</p>
+              <p className="text-sm font-semibold text-ink">Etapa de Fundamentação — {viewing.etapaFundamentacao.duracaoMin} min</p>
+              <p className="mt-1 text-sm text-ink-muted">Objetivo: {viewing.etapaFundamentacao.objetivo}</p>
+              <p className="text-sm text-ink-muted">Tipo: {viewing.etapaFundamentacao.tipo}</p>
             </div>
             <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
               <p className="text-sm font-semibold text-ink">Etapa Principal — {viewing.etapaPrincipal.duracaoMin} min</p>
               <p className="mt-1 text-sm text-ink-muted">Objetivo: {viewing.etapaPrincipal.objetivo}</p>
               <p className="text-sm text-ink-muted">Sub-temas: {viewing.etapaPrincipal.subTemas.join(", ")}</p>
               <p className="text-sm text-ink-muted">Orientações: {viewing.etapaPrincipal.orientacoes.join(", ")}</p>
+              <p className="mb-1 mt-2 text-sm text-ink-muted">Protocolo de Intervalo:</p>
+              <IntervaloFlow />
             </div>
           </div>
           <p className="mt-3 text-sm font-semibold text-ink">Total Planejado: {totalPlanejado(viewing)} minutos</p>
@@ -219,7 +222,7 @@ export default function AprovacaoPlanos() {
         ) : (
           <div className="flex flex-col gap-3">
             {pendentes.map((p) => {
-              const prazo = prazoInfo(p);
+              const prazo = prazoLabel(p.deadlineAt);
               return (
                 <div key={p.id} className="rounded-xl border border-line-soft bg-surface-2 p-3">
                   <div className="flex flex-wrap items-start gap-3">

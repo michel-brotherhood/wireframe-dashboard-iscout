@@ -1,10 +1,11 @@
-// Team (Amarelo/Azul) is jersey-color identification — used for súmula/escalação
-// only. It is not the general grouping/filtering concept for the dashboard;
-// that's `turma` + `categoria` below.
+// Cor do colete (Amarelo/Azul) é identificação de súmula/escalação apenas —
+// não é o agrupamento pedagógico do plano nem determina o treinador
+// responsável. Turma/categoria são o agrupamento geral.
 export type TeamLabel = "Amarelo" | "Azul";
-export type Phase = "Ofensiva" | "Defensiva";
 
-export type Categoria = "Sub-15" | "Sub-17" | "Sub-20";
+export type Phase = "Organização ofensiva" | "Organização defensiva" | "Progressão e finalização";
+
+export type Categoria = "Sub-13" | "Sub-15" | "Sub-17" | "Sub-20";
 export type Turma = "Turma A" | "Turma B";
 
 // Perfis de demonstração do wireframe — sem autenticação real, apenas altera
@@ -18,18 +19,27 @@ export type PlanStatus = "draft" | "submitted" | "changes_requested" | "approved
 export type SumulaStatus = "draft" | "confirmed";
 export type ExecutionStatus = "draft" | "confirmed";
 
+export type TipoEstacao = "Simples" | "Com bola" | "Recreativo";
+
+export interface Estacao {
+  nome: string;
+  tipo: TipoEstacao;
+  descricao: string;
+  duracaoMin: number;
+  materiais: string;
+}
+
 export interface EtapaInicial {
   objetivo: string;
   duracaoMin: number;
-  coordenacao: string[];
-  estacoes: string[];
+  estacao1: Estacao;
+  estacao2: Estacao;
 }
 
-export interface EtapaFuncionamento {
+export interface EtapaFundamentacao {
   objetivo: string;
   duracaoMin: number;
   tipo: "Analítico" | "Global" | "Situacional";
-  tema: string;
 }
 
 export interface ProtocoloIntervalo {
@@ -50,17 +60,23 @@ export interface EtapaPrincipal {
 export interface PlanoAula {
   id: string;
   sessionDate: string;
+  /** Horário da sessão, formato HH:mm — base do cálculo do prazo (sessão - 24h). */
+  horario: string;
   unidade: string;
   categoria: Categoria;
   turma: Turma;
+  /** Cor do colete — contexto de súmula, não é elemento pedagógico principal. */
   team: TeamLabel;
+  /** Treinador responsável — selecionado explicitamente, nunca derivado da cor do colete. */
   coachName: string;
   fase: Phase;
+  tema: string;
+  subtema: string;
   status: PlanStatus;
-  /** Prazo para envio/aprovação — usado para calcular "fora do prazo". */
+  /** Prazo limite = data/horário da sessão - 24h. Calculado, nunca fixo. */
   deadlineAt: string;
   etapaInicial: EtapaInicial;
-  etapaFuncionamento: EtapaFuncionamento;
+  etapaFundamentacao: EtapaFundamentacao;
   etapaPrincipal: EtapaPrincipal;
   observacoes: string;
   createdAt: string;
@@ -76,6 +92,8 @@ export interface SumulaEntry {
   jersey: number;
   nome: string;
   posicao: string;
+  categoria: Categoria;
+  matricula: string;
   starter: boolean;
 }
 
@@ -99,7 +117,7 @@ export type ImpactoDesvio = "Baixo" | "Médio" | "Alto";
 
 export interface Desvio {
   id: string;
-  etapa: "Inicial" | "Funcionamento" | "Principal";
+  etapa: "Inicial" | "Fundamentação" | "Principal";
   impacto: ImpactoDesvio;
   descricao: string;
 }
@@ -112,7 +130,7 @@ export interface ExecutionLog {
   sumulaId: string;
   status: ExecutionStatus;
   etapaInicial: EtapaExecucao;
-  etapaFuncionamento: EtapaExecucao;
+  etapaFundamentacao: EtapaExecucao;
   etapaPrincipal: EtapaExecucao;
   desvios: Desvio[];
   confirmedAt?: string;
@@ -126,7 +144,7 @@ export interface Treino {
   turma: Turma;
   team: TeamLabel;
   coachName: string;
-  status: "Draft" | "Executado";
+  status: "Rascunho" | "Executado";
   plano: PlanoAula;
   sumula: MatchSumula;
   executionLog?: ExecutionLog;

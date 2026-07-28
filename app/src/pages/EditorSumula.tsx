@@ -2,34 +2,39 @@ import { useState } from "react";
 import { ambiguousMatches } from "../data/mockData";
 import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
+import type { Categoria } from "../types";
 
 const BLOCKED_JERSEYS = [24, 51, 69];
+const CATEGORIAS: Categoria[] = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
 
 interface Row {
   jersey: number;
   nome: string;
   posicao: string;
+  matricula: string;
   starter: boolean;
 }
 
 const initialRoster: Row[] = [
-  { jersey: 1, nome: "João Silva", posicao: "Goleiro", starter: true },
-  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", starter: true },
-  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", starter: true },
-  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", starter: true },
-  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", starter: true },
-  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", starter: true },
-  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", starter: true },
-  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", starter: true },
-  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", starter: true },
-  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", starter: true },
-  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", starter: true },
+  { jersey: 1, nome: "João Silva", posicao: "Goleiro", matricula: "1001", starter: true },
+  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true },
+  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", matricula: "1003", starter: true },
+  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", matricula: "1004", starter: true },
+  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", matricula: "1005", starter: true },
+  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", matricula: "1006", starter: true },
+  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", matricula: "1007", starter: true },
+  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", matricula: "1008", starter: true },
+  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", matricula: "1009", starter: true },
+  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", matricula: "1010", starter: true },
+  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", matricula: "1011", starter: true },
 ];
 
 export default function EditorSumula() {
+  const [categoria, setCategoria] = useState<Categoria>("Sub-15");
   const [roster, setRoster] = useState<Row[]>(initialRoster);
   const [newJersey, setNewJersey] = useState("");
   const [newNome, setNewNome] = useState("");
+  const [newMatricula, setNewMatricula] = useState("");
   const [newStarter, setNewStarter] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState(false);
@@ -40,26 +45,27 @@ export default function EditorSumula() {
     const jerseyNum = Number(newJersey);
     setError(null);
 
-    if (!newJersey || !newNome.trim()) {
-      setError("Preencha jersey e nome do jogador.");
+    if (!newJersey || !newNome.trim() || !newMatricula.trim()) {
+      setError("Preencha número do colete, nome e matrícula do atleta.");
       return;
     }
     if (jerseyNum < 1 || jerseyNum > 99) {
-      setError("Jersey deve estar entre 1 e 99.");
+      setError("Número do colete deve estar entre 1 e 99.");
       return;
     }
     if (BLOCKED_JERSEYS.includes(jerseyNum)) {
-      setError(`Jersey ${jerseyNum} está bloqueado para uso.`);
+      setError(`Número do colete ${jerseyNum} está bloqueado para uso.`);
       return;
     }
     if (roster.some((r) => r.jersey === jerseyNum)) {
-      setError(`Jersey ${jerseyNum} já está em uso.`);
+      setError(`Número do colete ${jerseyNum} já está em uso.`);
       return;
     }
 
-    setRoster([...roster, { jersey: jerseyNum, nome: newNome.trim(), posicao: "—", starter: newStarter }]);
+    setRoster([...roster, { jersey: jerseyNum, nome: newNome.trim(), posicao: "—", matricula: newMatricula.trim(), starter: newStarter }]);
     setNewJersey("");
     setNewNome("");
+    setNewMatricula("");
     setNewStarter(true);
   }
 
@@ -68,33 +74,46 @@ export default function EditorSumula() {
   }
 
   const starterCount = roster.filter((r) => r.starter).length;
+  const jerseySet = new Set(roster.map((r) => r.jersey));
+  const hasDuplicateJersey = jerseySet.size !== roster.length;
+  const hasInvalidNumbers = roster.some((r) => !Number.isInteger(r.jersey) || r.jersey < 1 || r.jersey > 99);
+  const hasEmptyNome = roster.some((r) => !r.nome.trim());
+  const hasPendingAmbiguous = resolved && Object.keys(selections).length < ambiguousMatches.length;
+  const canConfirm = roster.length > 0 && !hasDuplicateJersey && !hasInvalidNumbers && !hasEmptyNome && !hasPendingAmbiguous;
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
-        Criar Súmula — 02/07/2026 — Team Amarelo
+        Criar Súmula — 02/07/2026 — {categoria}
       </h1>
 
       <Card>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Field label="Data" required>
             <input type="date" className={inputClass} defaultValue="2026-07-02" />
           </Field>
-          <Field label="Team" required>
+          <Field label="Categoria" required>
+            <select className={inputClass} value={categoria} onChange={(e) => setCategoria(e.target.value as Categoria)}>
+              {CATEGORIAS.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Cor do Colete" required>
             <select className={inputClass} defaultValue="Amarelo">
               <option>Amarelo</option>
               <option>Azul</option>
             </select>
           </Field>
-          <Field label="Event" required>
-            <input className={inputClass} defaultValue="Take 1 - Campo 2" />
+          <Field label="Sessão / Take" required>
+            <input className={inputClass} defaultValue="Sessão 1 - Campo 2" />
           </Field>
         </div>
       </Card>
 
-      <Card title="Adicionar Jogador">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[120px_1fr_120px_auto] sm:items-end">
-          <Field label="Jersey">
+      <Card title="Adicionar Atleta">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[140px_1fr_140px_120px_auto] sm:items-end">
+          <Field label="Número do Colete">
             <input
               type="number"
               min={1}
@@ -107,6 +126,9 @@ export default function EditorSumula() {
           <Field label="Nome">
             <input className={inputClass} value={newNome} onChange={(e) => setNewNome(e.target.value)} />
           </Field>
+          <Field label="Matrícula">
+            <input className={inputClass} value={newMatricula} onChange={(e) => setNewMatricula(e.target.value)} />
+          </Field>
           <label className="mb-4 flex items-center gap-2 text-sm text-ink sm:mb-[13px]">
             <input
               type="checkbox"
@@ -114,7 +136,7 @@ export default function EditorSumula() {
               checked={newStarter}
               onChange={(e) => setNewStarter(e.target.checked)}
             />
-            Starter
+            Titular
           </label>
           <PrimaryButton onClick={handleAdd} className="mb-4 sm:mb-4">
             <Icon name="plus" className="h-4 w-4" /> Adicionar
@@ -127,15 +149,16 @@ export default function EditorSumula() {
         )}
       </Card>
 
-      <Card title={`Escalação (${roster.length} jogadores)`}>
+      <Card title={`Escalação (${roster.length} atletas)`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
+          <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                <th scope="col" className="px-3 py-2">Jersey</th>
+                <th scope="col" className="px-3 py-2">Número do Colete</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
-                <th scope="col" className="px-3 py-2">Starter</th>
+                <th scope="col" className="px-3 py-2">Matrícula</th>
+                <th scope="col" className="px-3 py-2">Titular</th>
                 <th scope="col" className="px-3 py-2 sr-only">Ação</th>
               </tr>
             </thead>
@@ -145,6 +168,7 @@ export default function EditorSumula() {
                   <td className="px-3 py-2 font-medium text-ink">{r.jersey}</td>
                   <td className="px-3 py-2 text-ink-muted">{r.nome}</td>
                   <td className="px-3 py-2 text-ink-muted">{r.posicao}</td>
+                  <td className="px-3 py-2 text-ink-muted">{r.matricula}</td>
                   <td className="px-3 py-2 text-secondary">{r.starter ? <Icon name="check" className="h-4 w-4" /> : "—"}</td>
                   <td className="px-3 py-2 text-right">
                     <button
@@ -162,15 +186,24 @@ export default function EditorSumula() {
           </table>
         </div>
         <p className="mt-3 text-sm font-semibold text-ink">
-          Total: {roster.length} jogadores ({starterCount} starters)
+          Total: {roster.length} atletas ({starterCount} titulares)
         </p>
+        {!canConfirm && roster.length > 0 && (
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-warning">
+            <Icon name="alert" className="h-4 w-4" />
+            {hasEmptyNome && "Há atletas sem nome preenchido. "}
+            {hasInvalidNumbers && "Há números de colete inválidos. "}
+            {hasDuplicateJersey && "Há números de colete duplicados. "}
+            {hasPendingAmbiguous && "Ainda há nomes ambíguos pendentes de resolução."}
+          </p>
+        )}
       </Card>
 
       <div className="flex flex-wrap gap-2">
         <PrimaryButton variant="secondary" onClick={() => setResolved(true)}>
           Resolver Nomes
         </PrimaryButton>
-        <PrimaryButton disabled={roster.length !== 11} onClick={() => setStatus("Escalação confirmada e projetada.")}>
+        <PrimaryButton disabled={!canConfirm} onClick={() => setStatus("Escalação confirmada e projetada.")}>
           Confirmar Escalação
         </PrimaryButton>
       </div>
@@ -198,7 +231,7 @@ export default function EditorSumula() {
             {ambiguousMatches.map((m) => (
               <fieldset key={m.jersey} className="rounded-xl border border-warning/30 bg-warning/5 p-3">
                 <legend className="px-1 text-sm font-medium text-ink">
-                  Jersey {m.jersey} — "{m.nome}" → Selecione:
+                  Colete {m.jersey} — "{m.nome}" → Selecione:
                 </legend>
                 <div className="flex flex-col gap-1.5">
                   {m.opcoes.map((opt) => (

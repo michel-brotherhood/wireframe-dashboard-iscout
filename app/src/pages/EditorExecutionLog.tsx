@@ -43,7 +43,7 @@ export default function EditorExecutionLog() {
 
   const [stages, setStages] = useState<StageState[]>([
     { label: "Etapa Inicial (Aquecimento)", planejado: 10, executado: 12, observacoes: "Aquecimento mais longo que o previsto" },
-    { label: "Etapa Funcionamento", planejado: 15, executado: 14, observacoes: "Exercício de passe curto funcionou bem" },
+    { label: "Etapa de Fundamentação", planejado: 15, executado: 14, observacoes: "Exercício de passe curto funcionou bem" },
     { label: "Etapa Principal", planejado: 35, executado: 36, observacoes: "Jogo posicional com bom entendimento" },
   ]);
 
@@ -80,7 +80,7 @@ export default function EditorExecutionLog() {
       <div>
         <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
           Registrar Execução
-          {planoSelecionado && ` — ${formatDate(planoSelecionado.sessionDate)} — Team ${planoSelecionado.team} — ${planoSelecionado.coachName}`}
+          {planoSelecionado && ` — ${formatDate(planoSelecionado.sessionDate)} — Colete ${planoSelecionado.team} — ${planoSelecionado.coachName}`}
         </h1>
       </div>
 
@@ -90,7 +90,7 @@ export default function EditorExecutionLog() {
             <option value="">Selecione…</option>
             {planosDisponiveisParaExecucao.map((p) => (
               <option key={p.id} value={p.id}>
-                {formatDate(p.sessionDate)} · Team {p.team} · {p.coachName} · aprovado em {formatDate(p.approvedAt?.slice(0, 10) ?? p.sessionDate)}
+                {formatDate(p.sessionDate)} · Colete {p.team} · {p.coachName} · aprovado em {formatDate(p.approvedAt?.slice(0, 10) ?? p.sessionDate)}
               </option>
             ))}
           </select>
@@ -120,7 +120,7 @@ export default function EditorExecutionLog() {
               {planoSelecionado.fase} · {totalPlanejado} min total
             </p>
             <p className="text-sm text-ink-muted">
-              <span className="font-medium text-ink">Súmula:</span> Confirmada · 11 jogadores
+              <span className="font-medium text-ink">Súmula:</span> Confirmada
             </p>
           </Card>
 
@@ -186,7 +186,7 @@ export default function EditorExecutionLog() {
                         onChange={(e) => updateDesvio(d.id, { etapa: e.target.value })}
                       >
                         <option>Inicial</option>
-                        <option>Funcionamento</option>
+                        <option>Fundamentação</option>
                         <option>Principal</option>
                       </select>
                     </Field>
@@ -222,8 +222,8 @@ export default function EditorExecutionLog() {
           </Card>
 
           <div className="flex flex-wrap gap-2">
-            <PrimaryButton variant="secondary" onClick={() => setStatus("Execução salva como draft.")}>
-              Salvar como Draft
+            <PrimaryButton variant="secondary" onClick={() => setStatus("Execução salva como rascunho.")}>
+              Salvar como Rascunho
             </PrimaryButton>
             <PrimaryButton
               onClick={() => {
@@ -245,7 +245,7 @@ export default function EditorExecutionLog() {
           {confirmed && (
             <Card title="Ao confirmar" icon={<Icon name="alert" className="h-4 w-4 text-warning" />}>
               <ul className="flex flex-col gap-1 text-sm text-ink-muted">
-                <li>• Execution log fica confirmado</li>
+                <li>• Registro de Execução fica confirmado</li>
                 <li>• Plano marcado como Executado</li>
                 <li>• Avaliação pendente de metodologia definida pela coordenação pedagógica</li>
               </ul>
