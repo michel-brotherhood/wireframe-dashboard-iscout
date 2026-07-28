@@ -48,21 +48,25 @@ export function Card({
 const statusDot: Record<string, string> = {
   draft: "bg-ink-faint",
   submitted: "bg-warning",
+  changes_requested: "bg-warning",
   approved: "bg-secondary",
+  executed: "bg-secondary",
+  cancelled: "bg-ink-faint",
   confirmed: "bg-secondary",
-  rejected: "bg-primary",
   Executado: "bg-secondary",
   Draft: "bg-ink-faint",
 };
 
 const statusLabels: Record<string, string> = {
-  draft: "Draft",
-  submitted: "Submetido",
+  draft: "Rascunho",
+  submitted: "Aguardando Aprovação",
+  changes_requested: "Ajustes Solicitados",
   approved: "Aprovado",
+  executed: "Executado",
+  cancelled: "Cancelado",
   confirmed: "Confirmado",
-  rejected: "Rejeitado",
   Executado: "Executado",
-  Draft: "Draft",
+  Draft: "Rascunho",
 };
 
 export function StatusBadge({ status }: { status: string }) {

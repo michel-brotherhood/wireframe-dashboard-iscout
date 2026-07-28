@@ -4,12 +4,16 @@ import { planosPendentesIniciais, planosDisponiveisParaExecucao } from "../data/
 
 const seedPlanos: PlanoAula[] = [...planosPendentesIniciais, ...planosDisponiveisParaExecucao];
 
+// Nome do Head Coach "logado" nesta demonstração (sem autenticação real).
+const REVIEWER_NAME = "Carla Mendes (Head Coach)";
+
 interface PlanosContextValue {
   planos: PlanoAula[];
   addPlano: (plano: PlanoAula) => void;
-  approvePlano: (id: string) => void;
-  rejectPlano: (id: string, reason: string) => void;
+  approvePlano: (id: string, comment?: string) => void;
+  requestChanges: (id: string, comment: string) => void;
   bulkApprove: (ids: string[]) => void;
+  markExecuted: (id: string) => void;
 }
 
 const PlanosContext = createContext<PlanosContextValue | null>(null);
@@ -21,18 +25,36 @@ export function PlanosProvider({ children }: { children: ReactNode }) {
     setPlanos((prev) => [plano, ...prev]);
   }
 
-  function approvePlano(id: string) {
+  function approvePlano(id: string, comment?: string) {
     setPlanos((prev) =>
       prev.map((p) =>
-        p.id === id ? { ...p, status: "approved", approvedAt: new Date().toISOString(), approvedBy: "Manager" } : p,
+        p.id === id
+          ? {
+              ...p,
+              status: "approved",
+              approvedAt: new Date().toISOString(),
+              approvedBy: REVIEWER_NAME,
+              reviewComment: comment?.trim() || undefined,
+              reviewedAt: new Date().toISOString(),
+              reviewedBy: REVIEWER_NAME,
+            }
+          : p,
       ),
     );
   }
 
-  function rejectPlano(id: string, reason: string) {
+  function requestChanges(id: string, comment: string) {
     setPlanos((prev) =>
       prev.map((p) =>
-        p.id === id ? { ...p, status: "rejected", rejectedAt: new Date().toISOString(), rejectedReason: reason } : p,
+        p.id === id
+          ? {
+              ...p,
+              status: "changes_requested",
+              reviewedAt: new Date().toISOString(),
+              reviewedBy: REVIEWER_NAME,
+              reviewComment: comment,
+            }
+          : p,
       ),
     );
   }
@@ -42,14 +64,25 @@ export function PlanosProvider({ children }: { children: ReactNode }) {
     setPlanos((prev) =>
       prev.map((p) =>
         idSet.has(p.id)
-          ? { ...p, status: "approved", approvedAt: new Date().toISOString(), approvedBy: "Manager" }
+          ? {
+              ...p,
+              status: "approved",
+              approvedAt: new Date().toISOString(),
+              approvedBy: REVIEWER_NAME,
+              reviewedAt: new Date().toISOString(),
+              reviewedBy: REVIEWER_NAME,
+            }
           : p,
       ),
     );
   }
 
+  function markExecuted(id: string) {
+    setPlanos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "executed" } : p)));
+  }
+
   return (
-    <PlanosContext.Provider value={{ planos, addPlano, approvePlano, rejectPlano, bulkApprove }}>
+    <PlanosContext.Provider value={{ planos, addPlano, approvePlano, requestChanges, bulkApprove, markExecuted }}>
       {children}
     </PlanosContext.Provider>
   );

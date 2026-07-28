@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Field, PrimaryButton, ProgressBar, inputClass } from "../components/ui";
+import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
 
@@ -36,7 +36,7 @@ let desvioId = 3;
 
 export default function EditorExecutionLog() {
   const navigate = useNavigate();
-  const { planos } = usePlanos();
+  const { planos, markExecuted } = usePlanos();
   const planosDisponiveisParaExecucao = planos.filter((p) => p.status === "approved");
   const [planoId, setPlanoId] = useState("");
   const planoSelecionado = planosDisponiveisParaExecucao.find((p) => p.id === planoId) ?? null;
@@ -58,16 +58,6 @@ export default function EditorExecutionLog() {
   const totalPlanejado = stages.reduce((s, e) => s + e.planejado, 0);
   const totalExecutado = stages.reduce((s, e) => s + e.executado, 0);
   const diffTotal = totalExecutado - totalPlanejado;
-
-  const conformance = useMemo(() => {
-    const impactPoints: Record<string, number> = { Baixo: 20, Médio: 10, Alto: 0 };
-    const worstImpact = desvios.reduce((worst, d) => {
-      const order = ["Alto", "Médio", "Baixo"];
-      return order.indexOf(d.impacto) < order.indexOf(worst) ? d.impacto : worst;
-    }, "Baixo");
-    const timeScore = Math.abs(diffTotal) < 2 ? 30 : Math.abs(diffTotal) <= 5 ? 20 : 10;
-    return 20 + timeScore + 30 + (desvios.length ? impactPoints[worstImpact] : 20);
-  }, [diffTotal, desvios]);
 
   function updateStage(idx: number, patch: Partial<StageState>) {
     setStages((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
@@ -238,7 +228,8 @@ export default function EditorExecutionLog() {
             <PrimaryButton
               onClick={() => {
                 setConfirmed(true);
-                setStatus(`Execução confirmada. Conformidade calculada: ${conformance}%.`);
+                if (planoSelecionado) markExecuted(planoSelecionado.id);
+                setStatus("Execução confirmada.");
               }}
             >
               Confirmar Execução
@@ -252,13 +243,12 @@ export default function EditorExecutionLog() {
           )}
 
           {confirmed && (
-            <Card title="Ao confirmar" icon={<Icon name="bot" className="h-4 w-4" />}>
-              <ul className="mb-3 flex flex-col gap-1 text-sm text-ink-muted">
-                <li>• Sistema calcula conformidade: {conformance}%</li>
-                <li>• IA gera insights</li>
+            <Card title="Ao confirmar" icon={<Icon name="alert" className="h-4 w-4 text-warning" />}>
+              <ul className="flex flex-col gap-1 text-sm text-ink-muted">
                 <li>• Execution log fica confirmado</li>
+                <li>• Plano marcado como Executado</li>
+                <li>• Avaliação pendente de metodologia definida pela coordenação pedagógica</li>
               </ul>
-              <ProgressBar value={conformance} />
             </Card>
           )}
         </>

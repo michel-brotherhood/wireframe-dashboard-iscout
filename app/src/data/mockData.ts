@@ -1,5 +1,13 @@
 import type { Treino, PlanoAula, MatchSumula, ExecutionLog } from "../types";
 
+// "Agora" fixo do mundo mock — usado para calcular prazos vencidos ("fora do
+// prazo") sem depender de Date.now() real, mantendo os dados determinísticos.
+export const NOW_MOCK = "2026-07-02T12:00:00";
+
+export function isPastDeadline(plano: PlanoAula, now: string = NOW_MOCK) {
+  return plano.deadlineAt < now && (plano.status === "draft" || plano.status === "submitted" || plano.status === "changes_requested");
+}
+
 const rosterAmarelo: MatchSumula["entries"] = [
   { jersey: 1, nome: "João Silva", posicao: "Goleiro", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", starter: true },
@@ -17,10 +25,14 @@ const rosterAmarelo: MatchSumula["entries"] = [
 const plano0207: PlanoAula = {
   id: "plan-0207",
   sessionDate: "2026-07-02",
+  unidade: "Atibaia",
+  categoria: "Sub-15",
+  turma: "Turma A",
   team: "Amarelo",
   coachName: "João Silva",
   fase: "Ofensiva",
   status: "approved",
+  deadlineAt: "2026-07-01T18:00:00",
   etapaInicial: {
     objetivo: "Refinamento do gesto motor",
     duracaoMin: 10,
@@ -44,7 +56,7 @@ const plano0207: PlanoAula = {
     "Treino focado em passe curto e posicionamento. Atenção especial ao intervalo para hidratação.",
   createdAt: "2026-07-01T10:00:00",
   approvedAt: "2026-07-01T14:30:00",
-  approvedBy: "Manager",
+  approvedBy: "Carla Mendes (Head Coach)",
 };
 
 const sumula0207: MatchSumula = {
@@ -91,25 +103,6 @@ const execution0207: ExecutionLog = {
       descricao: "Um jogador lesionou no intervalo",
     },
   ],
-  conformanceScore: 85,
-  insights: [
-    {
-      text: "Treino bem estruturado com boa conformidade",
-      detail: "Fase, exercícios e escalação seguiram o plano aprovado sem alterações estruturais.",
-    },
-    {
-      text: "Ajustes de tempo foram mínimos e aceitáveis",
-      detail: "Diferença total de 3 min (+2, -1, +1) entre planejado e executado, dentro da faixa de tolerância de ±5 min.",
-    },
-    {
-      text: "Lesão no intervalo foi bem gerenciada",
-      detail: "Desvio de impacto médio registrado na Etapa Principal; treino continuou sem novos incidentes.",
-    },
-    {
-      text: "Recomendação: Manter estrutura, revisar protocolo de segurança no intervalo",
-      detail: "Baseado no desvio de impacto médio — considerar checklist de segurança adicional durante o intervalo de hidratação.",
-    },
-  ],
   confirmedAt: "2026-07-02T18:00:00",
 };
 
@@ -124,10 +117,12 @@ export const treinos: Treino[] = [
   {
     id: "t-0702",
     sessionDate: "2026-07-02",
+    unidade: "Atibaia",
+    categoria: "Sub-15",
+    turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "Executado",
-    conformance: 85,
     plano: plano0207,
     sumula: sumula0207,
     executionLog: execution0207,
@@ -135,37 +130,47 @@ export const treinos: Treino[] = [
   {
     id: "t-0701",
     sessionDate: "2026-07-01",
+    unidade: "Atibaia",
+    categoria: "Sub-17",
+    turma: "Turma B",
     team: "Azul",
     coachName: "Maria Santos",
     status: "Executado",
-    conformance: 78,
-    plano: shallowPlan({ id: "plan-0701", sessionDate: "2026-07-01", team: "Azul", coachName: "Maria Santos" }),
+    plano: shallowPlan({ id: "plan-0701", sessionDate: "2026-07-01", categoria: "Sub-17", turma: "Turma B", team: "Azul", coachName: "Maria Santos" }),
     sumula: shallowSumula({ id: "sum-0701", sessionDate: "2026-07-01", team: "Azul" }),
-    executionLog: { ...execution0207, id: "exec-0701", conformanceScore: 78 },
+    executionLog: { ...execution0207, id: "exec-0701" },
   },
   {
     id: "t-0630",
     sessionDate: "2026-06-30",
+    unidade: "Atibaia",
+    categoria: "Sub-15",
+    turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "Executado",
-    conformance: 92,
     plano: shallowPlan({ id: "plan-0630", sessionDate: "2026-06-30" }),
     sumula: shallowSumula({ id: "sum-0630", sessionDate: "2026-06-30" }),
-    executionLog: { ...execution0207, id: "exec-0630", conformanceScore: 92 },
+    executionLog: { ...execution0207, id: "exec-0630" },
   },
   {
     id: "t-0629",
     sessionDate: "2026-06-29",
+    unidade: "Atibaia",
+    categoria: "Sub-17",
+    turma: "Turma B",
     team: "Azul",
     coachName: "Maria Santos",
     status: "Draft",
     plano: shallowPlan({
       id: "plan-0629",
       sessionDate: "2026-06-29",
+      categoria: "Sub-17",
+      turma: "Turma B",
       team: "Azul",
       coachName: "Maria Santos",
       status: "draft",
+      deadlineAt: "2026-06-28T18:00:00",
       approvedAt: undefined,
       approvedBy: undefined,
     }),
@@ -174,46 +179,55 @@ export const treinos: Treino[] = [
   {
     id: "t-0628",
     sessionDate: "2026-06-28",
+    unidade: "Atibaia",
+    categoria: "Sub-15",
+    turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "Executado",
-    conformance: 88,
     plano: shallowPlan({ id: "plan-0628", sessionDate: "2026-06-28" }),
     sumula: shallowSumula({ id: "sum-0628", sessionDate: "2026-06-28" }),
-    executionLog: { ...execution0207, id: "exec-0628", conformanceScore: 88 },
+    executionLog: { ...execution0207, id: "exec-0628" },
+  },
+  // Demonstra o card "Aulas executadas sem plano aprovado": execução registrada
+  // mas o plano ligado a ela nunca chegou a "approved" (foi devolvido depois).
+  {
+    id: "t-0626",
+    sessionDate: "2026-06-26",
+    unidade: "Atibaia",
+    categoria: "Sub-15",
+    turma: "Turma A",
+    team: "Amarelo",
+    coachName: "João Silva",
+    status: "Executado",
+    plano: shallowPlan({
+      id: "plan-0626",
+      sessionDate: "2026-06-26",
+      status: "changes_requested",
+      deadlineAt: "2026-06-25T18:00:00",
+      approvedAt: undefined,
+      approvedBy: undefined,
+      reviewedAt: "2026-06-25T19:00:00",
+      reviewedBy: "Carla Mendes (Head Coach)",
+      reviewComment: "Duração da Etapa Principal fora do padrão — ajustar antes de reaprovar.",
+    }),
+    sumula: shallowSumula({ id: "sum-0626", sessionDate: "2026-06-26" }),
+    executionLog: { ...execution0207, id: "exec-0626" },
   },
 ];
 
-export const conformidadePorDia = [
-  { dia: "Seg", conformidade: 88 },
-  { dia: "Ter", conformidade: 92 },
-  { dia: "Qua", conformidade: 65 },
-  { dia: "Qui", conformidade: 78 },
-  { dia: "Sex", conformidade: 85 },
-  { dia: "Sab", conformidade: 58 },
-  { dia: "Dom", conformidade: 82 },
-];
-
-export const dashboardMetrics = {
-  planosTotal: 12,
-  planosAprovados: 10,
-  sumulasTotal: 12,
-  sumulasConfirmadas: 11,
-  execucoesTotal: 10,
-  execucoesConfirmadas: 10,
-  conformidadeMedia: 82.5,
-};
-
-// Fila de aprovação (RF3/RF4) — planos submetidos aguardando decisão do Manager,
-// mais um exemplo de rejeição para o histórico. Independente de `treinos` porque
-// representa planos que ainda não avançaram para súmula/execução.
+// Fila de Aprovações (RF3/RF4) — planos que ainda não avançaram para
+// súmula/execução. Independente de `treinos` de propósito.
 export const planosPendentesIniciais: PlanoAula[] = [
   shallowPlan({
     id: "plan-pend-1",
     sessionDate: "2026-07-03",
+    categoria: "Sub-15",
+    turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "submitted",
+    deadlineAt: "2026-07-02T18:00:00",
     createdAt: "2026-07-02T09:00:00",
     approvedAt: undefined,
     approvedBy: undefined,
@@ -221,35 +235,62 @@ export const planosPendentesIniciais: PlanoAula[] = [
   shallowPlan({
     id: "plan-pend-2",
     sessionDate: "2026-07-03",
+    categoria: "Sub-17",
+    turma: "Turma B",
     team: "Azul",
     coachName: "Maria Santos",
     fase: "Defensiva",
     status: "submitted",
+    deadlineAt: "2026-07-02T20:00:00",
     createdAt: "2026-07-02T11:20:00",
     approvedAt: undefined,
     approvedBy: undefined,
   }),
   shallowPlan({
     id: "plan-pend-3",
-    sessionDate: "2026-07-04",
+    sessionDate: "2026-06-30",
+    categoria: "Sub-15",
+    turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "submitted",
-    createdAt: "2026-07-02T15:45:00",
+    // Prazo já vencido em relação ao NOW_MOCK — alimenta o card/filtro "Fora do prazo".
+    deadlineAt: "2026-06-29T18:00:00",
+    createdAt: "2026-06-29T15:45:00",
     approvedAt: undefined,
     approvedBy: undefined,
   }),
   shallowPlan({
     id: "plan-pend-4",
     sessionDate: "2026-06-27",
+    categoria: "Sub-17",
+    turma: "Turma B",
     team: "Azul",
     coachName: "Maria Santos",
-    status: "rejected",
+    status: "changes_requested",
+    deadlineAt: "2026-06-26T18:00:00",
     createdAt: "2026-06-26T09:00:00",
     approvedAt: undefined,
     approvedBy: undefined,
-    rejectedAt: "2026-06-26T18:10:00",
-    rejectedReason: "Duração total abaixo de 30 minutos — revisar Etapa Principal.",
+    reviewedAt: "2026-06-26T18:10:00",
+    reviewedBy: "Carla Mendes (Head Coach)",
+    reviewComment: "Duração total abaixo de 30 minutos — revisar Etapa Principal.",
+  }),
+  shallowPlan({
+    id: "plan-pend-5",
+    sessionDate: "2026-06-20",
+    categoria: "Sub-15",
+    turma: "Turma A",
+    team: "Amarelo",
+    coachName: "João Silva",
+    status: "cancelled",
+    deadlineAt: "2026-06-19T18:00:00",
+    createdAt: "2026-06-18T09:00:00",
+    approvedAt: undefined,
+    approvedBy: undefined,
+    reviewedAt: "2026-06-19T10:00:00",
+    reviewedBy: "Carla Mendes (Head Coach)",
+    reviewComment: "Aula cancelada — unidade fechada para manutenção do campo.",
   }),
 ];
 
@@ -260,12 +301,15 @@ export const planosDisponiveisParaExecucao: PlanoAula[] = [
   shallowPlan({
     id: "plan-aprov-1",
     sessionDate: "2026-07-05",
+    categoria: "Sub-17",
+    turma: "Turma B",
     team: "Azul",
     coachName: "Maria Santos",
     status: "approved",
+    deadlineAt: "2026-07-04T18:00:00",
     createdAt: "2026-07-03T09:00:00",
     approvedAt: "2026-07-04T10:00:00",
-    approvedBy: "Manager",
+    approvedBy: "Carla Mendes (Head Coach)",
   }),
 ];
 

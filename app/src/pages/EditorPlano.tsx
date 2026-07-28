@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, Field, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
-import type { EtapaFuncionamento, Phase, PlanoAula, TeamLabel } from "../types";
+import type { Categoria, EtapaFuncionamento, Phase, PlanoAula, TeamLabel, Turma } from "../types";
 
 const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
 
@@ -14,6 +14,15 @@ const ESTACOES_OPTIONS = ["Com bola", "Sem bola", "Recreativo"];
 // Plano precisa ser criado com pelo menos 24h de antecedência da sessão.
 const HOJE_MOCK = "2026-07-02";
 const MIN_DATA = "2026-07-03";
+
+// Prazo de envio/aprovação: véspera da sessão, 18h — mesma convenção usada
+// nos dados mock da fila de Aprovações.
+function deadlineFor(sessionDate: string) {
+  const d = new Date(`${sessionDate}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  const iso = d.toISOString().slice(0, 10);
+  return `${iso}T18:00:00`;
+}
 
 function DiagramUpload() {
   return (
@@ -120,6 +129,9 @@ export default function EditorPlano() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [data, setData] = useState("2026-07-03");
+  const [unidade] = useState("Atibaia");
+  const [categoria, setCategoria] = useState("Sub-15");
+  const [turma, setTurma] = useState("Turma A");
   const [team, setTeam] = useState("Amarelo");
   const [fase, setFase] = useState("Ofensiva");
 
@@ -232,10 +244,14 @@ export default function EditorPlano() {
     const novoPlano: PlanoAula = {
       id: `plan-novo-${novoPlanoSeq++}`,
       sessionDate: data,
+      unidade,
+      categoria: categoria as Categoria,
+      turma: turma as Turma,
       team: team as TeamLabel,
       coachName: team === "Amarelo" ? "João Silva" : "Maria Santos",
       fase: fase as Phase,
       status: "submitted",
+      deadlineAt: deadlineFor(data),
       etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, coordenacao, estacoes },
       etapaFuncionamento: {
         objetivo: funcObjetivo,
@@ -282,7 +298,25 @@ export default function EditorPlano() {
               }}
             />
           </Field>
-          <Field label="Team" required>
+          <Field label="Unidade" required hint="Única unidade cadastrada nesta demonstração.">
+            <select className={inputClass} value={unidade} disabled>
+              <option>Atibaia</option>
+            </select>
+          </Field>
+          <Field label="Categoria" required>
+            <select className={inputClass} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+              <option>Sub-15</option>
+              <option>Sub-17</option>
+              <option>Sub-20</option>
+            </select>
+          </Field>
+          <Field label="Turma" required>
+            <select className={inputClass} value={turma} onChange={(e) => setTurma(e.target.value)}>
+              <option>Turma A</option>
+              <option>Turma B</option>
+            </select>
+          </Field>
+          <Field label="Team (colete)" required hint="Cor do colete — usada na súmula, não é o agrupamento da turma.">
             <select className={inputClass} value={team} onChange={(e) => setTeam(e.target.value)}>
               <option>Amarelo</option>
               <option>Azul</option>
