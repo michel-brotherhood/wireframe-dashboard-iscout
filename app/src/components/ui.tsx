@@ -163,7 +163,7 @@ export function PrimaryButton({
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "ghost";
   disabled?: boolean;
   className?: string;
 }) {
@@ -173,7 +173,6 @@ export function PrimaryButton({
     primary: "bg-primary-hover text-white hover:bg-primary-active",
     secondary:
       "bg-surface-2 text-ink border border-line hover:border-ink-faint",
-    danger: "bg-primary-hover text-white hover:bg-primary-active",
     ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
   };
   return (

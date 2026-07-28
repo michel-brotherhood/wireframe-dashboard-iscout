@@ -221,8 +221,13 @@ export default function EditorSumula() {
       </Card>
 
       <div className="flex flex-wrap gap-2">
-        <PrimaryButton variant="secondary" onClick={() => setResolved(true)}>
+        <PrimaryButton
+          variant="secondary"
+          disabled={pendingAmbiguous.length === 0 && notFound.length === 0}
+          onClick={() => setResolved(true)}
+        >
           Resolver Nomes
+          {pendingAmbiguous.length + notFound.length > 0 && ` (${pendingAmbiguous.length + notFound.length})`}
         </PrimaryButton>
         <PrimaryButton disabled={!canConfirm} onClick={() => setStatus("Escalação confirmada e projetada.")}>
           Confirmar Escalação
@@ -234,7 +239,7 @@ export default function EditorSumula() {
         </p>
       )}
 
-      {resolved && (
+      {(resolved || pendingAmbiguous.length > 0 || notFound.length > 0) && (
         <Card title="Resultado da Resolução">
           <div className="mb-4 flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1.5 text-secondary">

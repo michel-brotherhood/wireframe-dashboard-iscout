@@ -399,6 +399,23 @@ export default function EditorPlano() {
               ))}
             </select>
           </Field>
+        </div>
+
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line-soft bg-surface-2 px-3 py-2 text-sm">
+          <span className="text-ink-muted">
+            Duração Total: <span className="font-semibold text-ink">{total} min</span>
+          </span>
+          {prazo && (
+            <span className="text-ink-muted">
+              Prazo limite (sessão − 24h): <span className="font-medium text-ink">{formatDateTime(deadline as string)}</span> ·{" "}
+              <span className={`font-semibold ${prazo.tone}`}>{prazo.text}</span>
+            </span>
+          )}
+        </div>
+      </Card>
+
+      <Card title="Contexto Pedagógico" icon={<Icon name="clipboard" className="h-4 w-4" />}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Treinador Responsável" required hint="Selecionado explicitamente — não é definido pela cor do colete.">
             <select className={inputClass} value={coachName} onChange={(e) => setCoachName(e.target.value)}>
               {COACHES.map((c) => (
@@ -406,7 +423,6 @@ export default function EditorPlano() {
               ))}
             </select>
           </Field>
-
           <Field label="Fase do Jogo" required>
             <select className={inputClass} value={fase} onChange={(e) => handleFaseChange(e.target.value as Phase)}>
               {FASES.map((f) => (
@@ -430,19 +446,7 @@ export default function EditorPlano() {
           </Field>
         </div>
 
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line-soft bg-surface-2 px-3 py-2 text-sm">
-          <span className="text-ink-muted">
-            Duração Total: <span className="font-semibold text-ink">{total} min</span>
-          </span>
-          {prazo && (
-            <span className="text-ink-muted">
-              Prazo limite (sessão − 24h): <span className="font-medium text-ink">{formatDateTime(deadline as string)}</span> ·{" "}
-              <span className={`font-semibold ${prazo.tone}`}>{prazo.text}</span>
-            </span>
-          )}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2 text-xs text-ink-muted">
+        <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted">
           <span>Cor do colete (uso na súmula):</span>
           <select
             className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-ink [color-scheme:dark]"
