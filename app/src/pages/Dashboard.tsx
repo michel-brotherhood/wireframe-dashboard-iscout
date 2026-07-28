@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { treinos, isPastDeadline, NOW_MOCK } from "../data/mockData";
+import { treinos, isPastDeadline, todayDateString } from "../data/mockData";
 import { Card, StatusBadge, PrimaryButton, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import type { IconName } from "../components/Icon";
@@ -9,7 +9,7 @@ import { useRole } from "../state/RoleContext";
 import ResumoResponsavel from "./ResumoResponsavel";
 import type { PlanoAula, Treino } from "../types";
 
-const TODAY = NOW_MOCK.slice(0, 10);
+const TODAY = todayDateString();
 
 function formatDate(iso: string) {
   const [, m, d] = iso.split("-");

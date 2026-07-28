@@ -1,4 +1,27 @@
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
+
+// Fluxo do protocolo de intervalo: Hidratar → Repousar → Instruir → Ativar →
+// Voltar ao Jogo. Usado no Editor de Plano, Detalhe do Treino e Aprovações.
+export function IntervaloFlow() {
+  const steps = ["Hidratar", "Repousar", "Instruir", "Ativar", "Voltar ao Jogo"];
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {steps.map((s, i) => (
+        <span key={s} className="flex items-center gap-1.5">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              i === steps.length - 1 ? "bg-secondary/15 text-secondary" : "bg-primary/15 text-primary-text"
+            }`}
+          >
+            {s}
+          </span>
+          {i < steps.length - 1 && <Icon name="arrowRight" className="h-3.5 w-3.5 text-ink-muted" />}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function Tooltip({ text, children }: { text: string; children: ReactNode }) {
   return (
@@ -54,7 +77,7 @@ const statusDot: Record<string, string> = {
   cancelled: "bg-ink-faint",
   confirmed: "bg-secondary",
   Executado: "bg-secondary",
-  Draft: "bg-ink-faint",
+  Rascunho: "bg-ink-faint",
 };
 
 const statusLabels: Record<string, string> = {
@@ -66,7 +89,7 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
   confirmed: "Confirmado",
   Executado: "Executado",
-  Draft: "Rascunho",
+  Rascunho: "Rascunho",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -124,7 +147,7 @@ export function TeamBadge({ team }: { team: "Amarelo" | "Azul" }) {
       <span
         className={`h-2 w-2 rounded-full ${team === "Amarelo" ? "bg-team-amarelo" : "bg-team-azul"}`}
       />
-      Team {team}
+      Colete {team}
     </span>
   );
 }
@@ -140,7 +163,7 @@ export function PrimaryButton({
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "ghost";
   disabled?: boolean;
   className?: string;
 }) {
@@ -150,7 +173,6 @@ export function PrimaryButton({
     primary: "bg-primary-hover text-white hover:bg-primary-active",
     secondary:
       "bg-surface-2 text-ink border border-line hover:border-ink-faint",
-    danger: "bg-primary-hover text-white hover:bg-primary-active",
     ghost: "text-ink-muted hover:bg-surface-2 hover:text-ink",
   };
   return (

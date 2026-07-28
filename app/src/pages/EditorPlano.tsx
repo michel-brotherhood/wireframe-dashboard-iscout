@@ -1,27 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, Field, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
+import { Card, Field, IntervaloFlow, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
-import type { Categoria, EtapaFuncionamento, Phase, PlanoAula, TeamLabel, Turma } from "../types";
+import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
+import type { Categoria, Estacao, Phase, PlanoAula, TeamLabel, TipoEstacao, Turma } from "../types";
 
-const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
+const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"] as const;
 
-const COORDENACAO_OPTIONS = ["Aquecimento Lúdico", "Aquecimento Técnico"];
-const ESTACOES_OPTIONS = ["Com bola", "Sem bola", "Recreativo"];
+const COACHES = ["João Silva", "Maria Santos"];
+const PERIODOS = ["Manhã", "Tarde", "Noite"];
+const SEMANAS = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
+const FASES = Object.keys(FASE_TEMAS) as Phase[];
+const CATEGORIAS: Categoria[] = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
+const TURMAS: Turma[] = ["Turma A", "Turma B"];
+const TIPOS_ESTACAO: TipoEstacao[] = ["Simples", "Com bola", "Recreativo"];
 
-// "Hoje" fixo do mundo mock (mesma data usada como padrão no filtro do Dashboard).
-// Plano precisa ser criado com pelo menos 24h de antecedência da sessão.
-const HOJE_MOCK = "2026-07-02";
-const MIN_DATA = "2026-07-03";
-
-// Prazo de envio/aprovação: véspera da sessão, 18h — mesma convenção usada
-// nos dados mock da fila de Aprovações.
-function deadlineFor(sessionDate: string) {
-  const d = new Date(`${sessionDate}T00:00:00`);
-  d.setDate(d.getDate() - 1);
-  const iso = d.toISOString().slice(0, 10);
-  return `${iso}T18:00:00`;
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} às ${String(
+    d.getHours(),
+  ).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 function DiagramUpload() {
@@ -43,34 +42,47 @@ function DiagramUpload() {
   );
 }
 
-function Checklist({
+function EstacaoForm({
   label,
-  options,
-  selected,
-  onToggle,
+  value,
+  onChange,
 }: {
   label: string;
-  options: string[];
-  selected: string[];
-  onToggle: (opt: string) => void;
+  value: Estacao;
+  onChange: (patch: Partial<Estacao>) => void;
 }) {
   return (
-    <fieldset className="mb-4">
-      <legend className="mb-1 text-sm font-medium text-ink-muted">{label}</legend>
-      <div className="flex flex-col gap-1.5">
-        {options.map((opt) => (
-          <label key={opt} className="flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-line bg-surface-2 text-primary focus:ring-primary"
-              checked={selected.includes(opt)}
-              onChange={() => onToggle(opt)}
-            />
-            {opt}
-          </label>
-        ))}
+    <div className="mb-4 rounded-xl border border-line-soft bg-surface-2 p-3">
+      <p className="mb-3 text-sm font-semibold text-ink">{label}</p>
+      <Field label="Nome" required>
+        <input className={inputClass} value={value.nome} onChange={(e) => onChange({ nome: e.target.value })} />
+      </Field>
+      <Field label="Tipo" required>
+        <select className={inputClass} value={value.tipo} onChange={(e) => onChange({ tipo: e.target.value as TipoEstacao })}>
+          {TIPOS_ESTACAO.map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Descrição">
+        <input className={inputClass} value={value.descricao} onChange={(e) => onChange({ descricao: e.target.value })} />
+      </Field>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Duração (minutos)" required>
+          <input
+            type="number"
+            min={1}
+            className={inputClass}
+            value={value.duracaoMin}
+            onChange={(e) => onChange({ duracaoMin: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Materiais">
+          <input className={inputClass} value={value.materiais} onChange={(e) => onChange({ materiais: e.target.value })} />
+        </Field>
       </div>
-    </fieldset>
+      <DiagramUpload />
+    </div>
   );
 }
 
@@ -128,22 +140,39 @@ export default function EditorPlano() {
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [data, setData] = useState("2026-07-03");
+  const [defaultSession] = useState(() => defaultSessionDateTime());
+  const [data, setData] = useState(defaultSession.date);
+  const [horario, setHorario] = useState(defaultSession.time);
   const [unidade] = useState("Atibaia");
-  const [categoria, setCategoria] = useState("Sub-15");
-  const [turma, setTurma] = useState("Turma A");
-  const [team, setTeam] = useState("Amarelo");
-  const [fase, setFase] = useState("Ofensiva");
+  const [periodo, setPeriodo] = useState("Tarde");
+  const [semana, setSemana] = useState("Semana 1");
+  const [categoria, setCategoria] = useState<Categoria>("Sub-15");
+  const [turma, setTurma] = useState<Turma>("Turma A");
+  const [coachName, setCoachName] = useState(COACHES[0]);
+  const [team, setTeam] = useState<TeamLabel>("Amarelo");
+  const [fase, setFase] = useState<Phase>(FASES[0]);
+  const [tema, setTema] = useState(FASE_TEMAS[FASES[0]][0].tema);
+  const [subtema, setSubtema] = useState(FASE_TEMAS[FASES[0]][0].subtemas[0]);
 
   const [inicialObjetivo, setInicialObjetivo] = useState("Refinamento do gesto motor");
-  const [inicialDuracao, setInicialDuracao] = useState(10);
-  const [coordenacao, setCoordenacao] = useState<string[]>(["Aquecimento Lúdico"]);
-  const [estacoes, setEstacoes] = useState<string[]>(["Com bola", "Sem bola", "Recreativo"]);
+  const [estacao1, setEstacao1] = useState<Estacao>({
+    nome: "Aquecimento Lúdico com Bola",
+    tipo: "Com bola",
+    descricao: "Jogos lúdicos de ativação com bola, foco em coordenação óculo-pedal.",
+    duracaoMin: 5,
+    materiais: "Bolas, coletes",
+  });
+  const [estacao2, setEstacao2] = useState<Estacao>({
+    nome: "Circuito Recreativo Sem Bola",
+    tipo: "Recreativo",
+    descricao: "Circuito de agilidade e coordenação motora sem bola.",
+    duracaoMin: 5,
+    materiais: "Cones, escada de agilidade",
+  });
 
-  const [funcObjetivo, setFuncObjetivo] = useState("Função no modelo de jogo");
-  const [funcDuracao, setFuncDuracao] = useState(15);
-  const [funcTipo, setFuncTipo] = useState("Analítico");
-  const [funcTema, setFuncTema] = useState("Passe Curto");
+  const [fundObjetivo, setFundObjetivo] = useState("Função no modelo de jogo");
+  const [fundDuracao, setFundDuracao] = useState(15);
+  const [fundTipo, setFundTipo] = useState("Analítico");
 
   const [principalObjetivo, setPrincipalObjetivo] = useState("Função no modelo de jogo");
   const [principalDuracao, setPrincipalDuracao] = useState(35);
@@ -158,10 +187,26 @@ export default function EditorPlano() {
     "Treino focado em passe curto e posicionamento\nAtenção especial ao intervalo para hidratação",
   );
 
-  const total = inicialDuracao + funcDuracao + principalDuracao;
+  const inicialDuracao = estacao1.duracaoMin + estacao2.duracaoMin;
+  const total = inicialDuracao + fundDuracao + principalDuracao;
 
-  function toggleFrom(list: string[], setList: (v: string[]) => void, item: string) {
-    setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
+  const temaOptions = FASE_TEMAS[fase];
+  const subtemaOptions = temaOptions.find((t) => t.tema === tema)?.subtemas ?? [];
+
+  const deadline = data && horario ? calcDeadline(data, horario) : null;
+  const prazo = deadline ? prazoLabel(deadline) : null;
+
+  function handleFaseChange(newFase: Phase) {
+    setFase(newFase);
+    const first = FASE_TEMAS[newFase][0];
+    setTema(first.tema);
+    setSubtema(first.subtemas[0]);
+  }
+
+  function handleTemaChange(newTema: string) {
+    setTema(newTema);
+    const subtemas = temaOptions.find((t) => t.tema === newTema)?.subtemas ?? [];
+    setSubtema(subtemas[0] ?? "");
   }
 
   function addItem(list: string[], setList: (v: string[]) => void) {
@@ -188,7 +233,13 @@ export default function EditorPlano() {
   function validateHeader(): Record<string, string> {
     const e: Record<string, string> = {};
     if (!data) e.data = "Informe a data da sessão.";
-    else if (data < MIN_DATA) e.data = `Plano deve ser criado com 24h de antecedência (a partir de ${MIN_DATA}).`;
+    if (!horario) e.horario = "Informe o horário da sessão.";
+    if (data && horario) {
+      const dl = calcDeadline(data, horario);
+      if (new Date(dl).getTime() < getNow().getTime()) {
+        e.data = `Prazo de 24h já vencido para esse horário — prazo limite seria ${formatDateTime(dl)}.`;
+      }
+    }
     return e;
   }
 
@@ -196,12 +247,14 @@ export default function EditorPlano() {
     const e: Record<string, string> = {};
     if (idx === 0) {
       if (!inicialObjetivo.trim()) e.inicialObjetivo = "Objetivo é obrigatório.";
-      if (!inicialDuracao || inicialDuracao <= 0) e.inicialDuracao = "Duração deve ser maior que 0.";
+      if (!estacao1.nome.trim()) e.estacao1Nome = "Nome da Estação 1 é obrigatório.";
+      if (!estacao1.duracaoMin || estacao1.duracaoMin <= 0) e.estacao1Duracao = "Duração da Estação 1 deve ser maior que 0.";
+      if (!estacao2.nome.trim()) e.estacao2Nome = "Nome da Estação 2 é obrigatório.";
+      if (!estacao2.duracaoMin || estacao2.duracaoMin <= 0) e.estacao2Duracao = "Duração da Estação 2 deve ser maior que 0.";
     }
     if (idx === 1) {
-      if (!funcObjetivo.trim()) e.funcObjetivo = "Objetivo é obrigatório.";
-      if (!funcDuracao || funcDuracao <= 0) e.funcDuracao = "Duração deve ser maior que 0.";
-      if (!funcTema.trim()) e.funcTema = "Tema é obrigatório.";
+      if (!fundObjetivo.trim()) e.fundObjetivo = "Objetivo é obrigatório.";
+      if (!fundDuracao || fundDuracao <= 0) e.fundDuracao = "Duração deve ser maior que 0.";
     }
     if (idx === 2) {
       if (!principalObjetivo.trim()) e.principalObjetivo = "Objetivo é obrigatório.";
@@ -224,7 +277,7 @@ export default function EditorPlano() {
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
       const firstInvalidTab = [0, 1, 2].find((i) => Object.keys(validateTab(i)).length > 0);
-      if (allErrors.data) {
+      if (allErrors.data || allErrors.horario) {
         setTab(0);
       } else if (firstInvalidTab !== undefined) {
         setTab(firstInvalidTab);
@@ -244,21 +297,21 @@ export default function EditorPlano() {
     const novoPlano: PlanoAula = {
       id: `plan-novo-${novoPlanoSeq++}`,
       sessionDate: data,
+      horario,
       unidade,
-      categoria: categoria as Categoria,
-      turma: turma as Turma,
-      team: team as TeamLabel,
-      coachName: team === "Amarelo" ? "João Silva" : "Maria Santos",
-      fase: fase as Phase,
+      periodo,
+      semana,
+      categoria,
+      turma,
+      team,
+      coachName,
+      fase,
+      tema,
+      subtema,
       status: "submitted",
-      deadlineAt: deadlineFor(data),
-      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, coordenacao, estacoes },
-      etapaFuncionamento: {
-        objetivo: funcObjetivo,
-        duracaoMin: funcDuracao,
-        tipo: funcTipo as EtapaFuncionamento["tipo"],
-        tema: funcTema,
-      },
+      deadlineAt: calcDeadline(data, horario),
+      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, estacao1, estacao2 },
+      etapaFundamentacao: { objetivo: fundObjetivo, duracaoMin: fundDuracao, tipo: fundTipo as "Analítico" | "Global" | "Situacional" },
       etapaPrincipal: {
         objetivo: principalObjetivo,
         duracaoMin: principalDuracao,
@@ -284,12 +337,11 @@ export default function EditorPlano() {
         </h1>
       </div>
 
-      <Card>
+      <Card title="Dados da Sessão" icon={<Icon name="calendar" className="h-4 w-4" />}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label="Data" required error={errors.data} hint={!errors.data ? `Mínimo: ${MIN_DATA} (24h após ${HOJE_MOCK})` : undefined}>
+          <Field label="Data" required error={errors.data}>
             <input
               type="date"
-              min={MIN_DATA}
               className={errors.data ? inputErrorClass : inputClass}
               value={data}
               onChange={(e) => {
@@ -298,36 +350,112 @@ export default function EditorPlano() {
               }}
             />
           </Field>
-          <Field label="Unidade" required hint="Única unidade cadastrada nesta demonstração.">
+          <Field label="Horário" required error={errors.horario}>
+            <input
+              type="time"
+              className={errors.horario ? inputErrorClass : inputClass}
+              value={horario}
+              onChange={(e) => {
+                setHorario(e.target.value);
+                clearError("horario");
+              }}
+            />
+          </Field>
+          <Field label="Dia da Semana" hint="Calculado a partir da data.">
+            <input className={inputClass} value={data ? diaDaSemana(data) : "-"} disabled />
+          </Field>
+
+          <Field label="Unidade" required>
             <select className={inputClass} value={unidade} disabled>
               <option>Atibaia</option>
             </select>
           </Field>
+          <Field label="Período" required>
+            <select className={inputClass} value={periodo} onChange={(e) => setPeriodo(e.target.value)}>
+              {PERIODOS.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Semana" required>
+            <select className={inputClass} value={semana} onChange={(e) => setSemana(e.target.value)}>
+              {SEMANAS.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Categoria" required>
-            <select className={inputClass} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-              <option>Sub-15</option>
-              <option>Sub-17</option>
-              <option>Sub-20</option>
+            <select className={inputClass} value={categoria} onChange={(e) => setCategoria(e.target.value as Categoria)}>
+              {CATEGORIAS.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
             </select>
           </Field>
           <Field label="Turma" required>
-            <select className={inputClass} value={turma} onChange={(e) => setTurma(e.target.value)}>
-              <option>Turma A</option>
-              <option>Turma B</option>
+            <select className={inputClass} value={turma} onChange={(e) => setTurma(e.target.value as Turma)}>
+              {TURMAS.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
             </select>
           </Field>
-          <Field label="Team (colete)" required hint="Cor do colete — usada na súmula, não é o agrupamento da turma.">
-            <select className={inputClass} value={team} onChange={(e) => setTeam(e.target.value)}>
-              <option>Amarelo</option>
-              <option>Azul</option>
+        </div>
+
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line-soft bg-surface-2 px-3 py-2 text-sm">
+          <span className="text-ink-muted">
+            Duração Total: <span className="font-semibold text-ink">{total} min</span>
+          </span>
+          {prazo && (
+            <span className="text-ink-muted">
+              Prazo limite (sessão − 24h): <span className="font-medium text-ink">{formatDateTime(deadline as string)}</span> ·{" "}
+              <span className={`font-semibold ${prazo.tone}`}>{prazo.text}</span>
+            </span>
+          )}
+        </div>
+      </Card>
+
+      <Card title="Contexto Pedagógico" icon={<Icon name="clipboard" className="h-4 w-4" />}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Treinador Responsável" required hint="Selecionado explicitamente — não é definido pela cor do colete.">
+            <select className={inputClass} value={coachName} onChange={(e) => setCoachName(e.target.value)}>
+              {COACHES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
             </select>
           </Field>
-          <Field label="Fase" required>
-            <select className={inputClass} value={fase} onChange={(e) => setFase(e.target.value)}>
-              <option>Ofensiva</option>
-              <option>Defensiva</option>
+          <Field label="Fase do Jogo" required>
+            <select className={inputClass} value={fase} onChange={(e) => handleFaseChange(e.target.value as Phase)}>
+              {FASES.map((f) => (
+                <option key={f}>{f}</option>
+              ))}
             </select>
           </Field>
+          <Field label="Tema" required>
+            <select className={inputClass} value={tema} onChange={(e) => handleTemaChange(e.target.value)}>
+              {temaOptions.map((t) => (
+                <option key={t.tema}>{t.tema}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Subtema" required>
+            <select className={inputClass} value={subtema} onChange={(e) => setSubtema(e.target.value)}>
+              {subtemaOptions.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted">
+          <span>Cor do colete (uso na súmula):</span>
+          <select
+            className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-ink [color-scheme:dark]"
+            value={team}
+            onChange={(e) => setTeam(e.target.value as TeamLabel)}
+          >
+            <option>Amarelo</option>
+            <option>Azul</option>
+          </select>
         </div>
       </Card>
 
@@ -382,31 +510,27 @@ export default function EditorPlano() {
               }}
             />
           </Field>
-          <Field label="Duração (minutos)" required error={errors.inicialDuracao}>
-            <input
-              type="number"
-              min={1}
-              className={errors.inicialDuracao ? inputErrorClass : inputClass}
-              value={inicialDuracao}
-              onChange={(e) => {
-                setInicialDuracao(Number(e.target.value));
-                clearError("inicialDuracao");
-              }}
-            />
-          </Field>
-          <Checklist
-            label="Coordenação (selecione)"
-            options={COORDENACAO_OPTIONS}
-            selected={coordenacao}
-            onToggle={(opt) => toggleFrom(coordenacao, setCoordenacao, opt)}
+          <p className="mb-4 text-sm text-ink-muted">
+            Duração da etapa (soma das estações): <span className="font-semibold text-ink">{inicialDuracao} min</span>
+          </p>
+          <EstacaoForm
+            label="Estação 1"
+            value={estacao1}
+            onChange={(patch) => {
+              setEstacao1((prev) => ({ ...prev, ...patch }));
+              clearError("estacao1Nome");
+              clearError("estacao1Duracao");
+            }}
           />
-          <Checklist
-            label="Estações (selecione)"
-            options={ESTACOES_OPTIONS}
-            selected={estacoes}
-            onToggle={(opt) => toggleFrom(estacoes, setEstacoes, opt)}
+          <EstacaoForm
+            label="Estação 2"
+            value={estacao2}
+            onChange={(patch) => {
+              setEstacao2((prev) => ({ ...prev, ...patch }));
+              clearError("estacao2Nome");
+              clearError("estacao2Duracao");
+            }}
           />
-          <DiagramUpload />
           <div className="flex justify-end">
             <PrimaryButton onClick={() => goToNext(1)}>
               Próximo <Icon name="arrowRight" className="h-4 w-4" />
@@ -416,26 +540,26 @@ export default function EditorPlano() {
       )}
 
       {tab === 1 && (
-        <Card title="Aba 2 · Etapa Funcionamento">
-          <Field label="Objetivo" required error={errors.funcObjetivo}>
+        <Card title="Aba 2 · Etapa de Fundamentação">
+          <Field label="Objetivo" required error={errors.fundObjetivo}>
             <input
-              className={errors.funcObjetivo ? inputErrorClass : inputClass}
-              value={funcObjetivo}
+              className={errors.fundObjetivo ? inputErrorClass : inputClass}
+              value={fundObjetivo}
               onChange={(e) => {
-                setFuncObjetivo(e.target.value);
-                clearError("funcObjetivo");
+                setFundObjetivo(e.target.value);
+                clearError("fundObjetivo");
               }}
             />
           </Field>
-          <Field label="Duração (minutos)" required error={errors.funcDuracao}>
+          <Field label="Duração (minutos)" required error={errors.fundDuracao}>
             <input
               type="number"
               min={1}
-              className={errors.funcDuracao ? inputErrorClass : inputClass}
-              value={funcDuracao}
+              className={errors.fundDuracao ? inputErrorClass : inputClass}
+              value={fundDuracao}
               onChange={(e) => {
-                setFuncDuracao(Number(e.target.value));
-                clearError("funcDuracao");
+                setFundDuracao(Number(e.target.value));
+                clearError("fundDuracao");
               }}
             />
           </Field>
@@ -448,24 +572,17 @@ export default function EditorPlano() {
                     type="radio"
                     name="tipo-exercicio"
                     className="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
-                    checked={funcTipo === opt}
-                    onChange={() => setFuncTipo(opt)}
+                    checked={fundTipo === opt}
+                    onChange={() => setFundTipo(opt)}
                   />
                   {opt}
                 </label>
               ))}
             </div>
           </fieldset>
-          <Field label="Tema" required error={errors.funcTema}>
-            <input
-              className={errors.funcTema ? inputErrorClass : inputClass}
-              value={funcTema}
-              onChange={(e) => {
-                setFuncTema(e.target.value);
-                clearError("funcTema");
-              }}
-            />
-          </Field>
+          <p className="mb-4 text-sm text-ink-muted">
+            Tema e subtema desta sessão são definidos no cabeçalho ({tema} · {subtema}).
+          </p>
           <DiagramUpload />
           <div className="flex justify-between">
             <PrimaryButton variant="secondary" onClick={() => setTab(0)}>
@@ -523,6 +640,9 @@ export default function EditorPlano() {
 
           <div className="mb-4">
             <span className="mb-2 block text-sm font-medium text-ink-muted">Protocolo de Intervalo</span>
+            <div className="mb-3">
+              <IntervaloFlow />
+            </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Field label="Hidratação (min)">
                 <input type="number" className={inputClass} value={hidratacao} onChange={(e) => setHidratacao(Number(e.target.value))} />
@@ -585,10 +705,10 @@ export default function EditorPlano() {
                 onClick={() => {
                   setStatusIsError(false);
                   setJustSubmitted(false);
-                  setStatus("Plano salvo como draft.");
+                  setStatus("Plano salvo como rascunho.");
                 }}
               >
-                Salvar como Draft
+                Salvar como Rascunho
               </PrimaryButton>
               <PrimaryButton onClick={handleSubmit}>Submeter para Aprovação</PrimaryButton>
             </div>

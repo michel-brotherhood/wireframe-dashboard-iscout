@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { treinos } from "../data/mockData";
-import { Card, StatusBadge, PrimaryButton } from "../components/ui";
+import { Card, IntervaloFlow, StatusBadge, PrimaryButton } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { useRole } from "../state/RoleContext";
 
@@ -34,7 +34,7 @@ export default function TreinoDetalhe() {
   const treino = treinos.find((t) => t.id === id) ?? treinos[0];
   const { plano, sumula, executionLog } = treino;
   const totalPlanejado =
-    plano.etapaInicial.duracaoMin + plano.etapaFuncionamento.duracaoMin + plano.etapaPrincipal.duracaoMin;
+    plano.etapaInicial.duracaoMin + plano.etapaFundamentacao.duracaoMin + plano.etapaPrincipal.duracaoMin;
 
   const [status, setStatus] = useState<string | null>(null);
 
@@ -105,22 +105,38 @@ export default function TreinoDetalhe() {
           </span>
         </div>
 
+        <p className="mb-1 text-sm text-ink-muted">
+          <span className="font-medium text-ink">Tema:</span> {plano.tema} · <span className="font-medium text-ink">Subtema:</span>{" "}
+          {plano.subtema} · <span className="font-medium text-ink">Horário:</span> {plano.horario}
+        </p>
+        <p className="mb-3 text-sm text-ink-muted">
+          <span className="font-medium text-ink">Período:</span> {plano.periodo} · <span className="font-medium text-ink">Semana:</span>{" "}
+          {plano.semana}
+        </p>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
             <p className="text-sm font-semibold text-ink">
               Etapa Inicial (Aquecimento) — {plano.etapaInicial.duracaoMin} min
             </p>
             <p className="mt-1 text-sm text-ink-muted">Objetivo: {plano.etapaInicial.objetivo}</p>
-            <p className="text-sm text-ink-muted">Coordenação: {plano.etapaInicial.coordenacao.join(", ")}</p>
-            <p className="text-sm text-ink-muted">Estações: {plano.etapaInicial.estacoes.join(", ")}</p>
+            <p className="mt-2 text-sm font-medium text-ink">Estação 1 — {plano.etapaInicial.estacao1.nome}</p>
+            <p className="text-sm text-ink-muted">
+              {plano.etapaInicial.estacao1.tipo} · {plano.etapaInicial.estacao1.duracaoMin} min · {plano.etapaInicial.estacao1.descricao}
+            </p>
+            <p className="text-sm text-ink-muted">Materiais: {plano.etapaInicial.estacao1.materiais}</p>
+            <p className="mt-2 text-sm font-medium text-ink">Estação 2 — {plano.etapaInicial.estacao2.nome}</p>
+            <p className="text-sm text-ink-muted">
+              {plano.etapaInicial.estacao2.tipo} · {plano.etapaInicial.estacao2.duracaoMin} min · {plano.etapaInicial.estacao2.descricao}
+            </p>
+            <p className="text-sm text-ink-muted">Materiais: {plano.etapaInicial.estacao2.materiais}</p>
           </div>
           <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
             <p className="text-sm font-semibold text-ink">
-              Etapa Funcionamento — {plano.etapaFuncionamento.duracaoMin} min
+              Etapa de Fundamentação — {plano.etapaFundamentacao.duracaoMin} min
             </p>
-            <p className="mt-1 text-sm text-ink-muted">Objetivo: {plano.etapaFuncionamento.objetivo}</p>
-            <p className="text-sm text-ink-muted">Tipo: {plano.etapaFuncionamento.tipo}</p>
-            <p className="text-sm text-ink-muted">Tema: {plano.etapaFuncionamento.tema}</p>
+            <p className="mt-1 text-sm text-ink-muted">Objetivo: {plano.etapaFundamentacao.objetivo}</p>
+            <p className="text-sm text-ink-muted">Tipo: {plano.etapaFundamentacao.tipo}</p>
           </div>
           <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
             <p className="text-sm font-semibold text-ink">
@@ -129,8 +145,10 @@ export default function TreinoDetalhe() {
             <p className="mt-1 text-sm text-ink-muted">Objetivo: {plano.etapaPrincipal.objetivo}</p>
             <p className="text-sm text-ink-muted">Sub-temas: {plano.etapaPrincipal.subTemas.join(", ")}</p>
             <p className="text-sm text-ink-muted">Orientações: {plano.etapaPrincipal.orientacoes.join(", ")}</p>
-            <p className="text-sm text-ink-muted">
-              Intervalo: Hidratação {plano.etapaPrincipal.intervalo.hidratacaoMin}min, Repouso{" "}
+            <p className="mb-1 mt-2 text-sm text-ink-muted">Protocolo de Intervalo:</p>
+            <IntervaloFlow />
+            <p className="mt-2 text-sm text-ink-muted">
+              Hidratação {plano.etapaPrincipal.intervalo.hidratacaoMin}min, Repouso{" "}
               {plano.etapaPrincipal.intervalo.repousoMin}min, Instruir {plano.etapaPrincipal.intervalo.instruirMin}min,
               Ativar {plano.etapaPrincipal.intervalo.ativarMin}min
             </p>
@@ -154,16 +172,16 @@ export default function TreinoDetalhe() {
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={sumula.status} />
           {sumula.confirmedAt && <span className="text-ink-muted">{formatDateTime(sumula.confirmedAt)}</span>}
-          <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} jogadores</span>
+          <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} atletas</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                <th scope="col" className="px-3 py-2">Jersey</th>
+                <th scope="col" className="px-3 py-2">Número do Colete</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
-                <th scope="col" className="px-3 py-2">Starter</th>
+                <th scope="col" className="px-3 py-2">Titular</th>
               </tr>
             </thead>
             <tbody>
@@ -182,9 +200,9 @@ export default function TreinoDetalhe() {
         </div>
       </Card>
 
-      {/* Seção 3: Execution Log */}
+      {/* Seção 3: Registro de Execução */}
       {executionLog ? (
-        <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
+        <Card title="Seção 3 · Registro de Execução" icon={<Icon name="barChart" className="h-4 w-4" />}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
             <StatusBadge status={executionLog.status} />
             {executionLog.confirmedAt && <span className="text-ink-muted">{formatDateTime(executionLog.confirmedAt)}</span>}
@@ -193,7 +211,7 @@ export default function TreinoDetalhe() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { label: "Etapa Inicial (Aquecimento)", data: executionLog.etapaInicial },
-              { label: "Etapa Funcionamento", data: executionLog.etapaFuncionamento },
+              { label: "Etapa de Fundamentação", data: executionLog.etapaFundamentacao },
               { label: "Etapa Principal", data: executionLog.etapaPrincipal },
             ].map(({ label, data }) => {
               const dev = deviationLabel(data.planejadoMin, data.executadoMin);
@@ -230,7 +248,7 @@ export default function TreinoDetalhe() {
           </div>
         </Card>
       ) : (
-        <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
+        <Card title="Seção 3 · Registro de Execução" icon={<Icon name="barChart" className="h-4 w-4" />}>
           <p className="text-sm text-ink-muted">Execução ainda não registrada para este treino.</p>
         </Card>
       )}

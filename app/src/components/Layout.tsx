@@ -34,6 +34,9 @@ function navItemsForRole(role: Role): NavItem[] {
 }
 
 const referenceNavItem: NavItem = { to: "/arquitetura", label: "Arquitetura", icon: "network" };
+// Arquitetura aponta direto para o diagrama fonte no Mermaid (nova aba) — a
+// referência técnica vive lá, não é replicada dentro do wireframe.
+const ARQUITETURA_MERMAID_URL = "https://mermaid.ai/d/400df741-4a78-42b7-82b3-38667bbb9cf6";
 
 function RoleSelect({ className = "" }: { className?: string }) {
   const { role, setRole } = useRole();
@@ -125,7 +128,16 @@ export default function Layout({ children }: { children: ReactNode }) {
             {showArquitetura && (
               <>
                 <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
-                <NavLinkPill item={referenceNavItem} />
+                <a
+                  href={ARQUITETURA_MERMAID_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                >
+                  <Icon name={referenceNavItem.icon} className="h-4 w-4" />
+                  {referenceNavItem.label}
+                  <Icon name="externalLink" className="h-3.5 w-3.5" />
+                </a>
               </>
             )}
           </nav>
@@ -134,17 +146,15 @@ export default function Layout({ children }: { children: ReactNode }) {
             <RoleSelect className="hidden md:block" />
             <RoleSelect className="md:hidden" />
             {showArquitetura && (
-              <NavLink
-                to={referenceNavItem.to}
-                aria-label="Arquitetura do sistema (referência técnica)"
-                className={({ isActive }) =>
-                  `flex h-9 w-9 items-center justify-center rounded-lg border border-line md:hidden ${
-                    isActive ? "bg-primary/15 text-primary-text" : "text-ink-muted"
-                  }`
-                }
+              <a
+                href={ARQUITETURA_MERMAID_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Arquitetura do sistema no Mermaid (abre em nova aba)"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-muted md:hidden"
               >
                 <Icon name={referenceNavItem.icon} className="h-4 w-4" />
-              </NavLink>
+              </a>
             )}
           </div>
         </div>
