@@ -74,3 +74,16 @@ h1, h2, h3, .font-heading {
 ::selection {
   background: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
+
+/* Respeita a preferência do sistema por menos movimento: neutraliza
+   transições/animações para quem ativou "reduzir movimento" (a11y). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

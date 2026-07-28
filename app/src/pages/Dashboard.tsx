@@ -92,6 +92,16 @@ export default function Dashboard() {
   const [turmaFilter, setTurmaFilter] = useState("Todas");
   const [treinadorFilter, setTreinadorFilter] = useState("Todos");
   const [statusFilter, setStatusFilter] = useState("Todos");
+  // No mobile os filtros ficam recolhidos por padrão para o conteúdo principal
+  // aparecer sem scroll; o badge mostra quantos filtros estão ativos.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = [
+    unidadeFilter !== "Todas",
+    categoriaFilter !== "Todas",
+    turmaFilter !== "Todas",
+    treinadorFilter !== "Todos",
+    statusFilter !== "Todos",
+  ].filter(Boolean).length;
 
   const unidades = useMemo(() => Array.from(new Set(treinos.map((t) => t.unidade))), []);
   const categorias = useMemo(() => Array.from(new Set(treinos.map((t) => t.categoria))), []);
@@ -127,8 +137,8 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading flex items-center gap-2 text-xl font-semibold text-ink sm:text-2xl">
-            <Icon name="trophy" className="h-6 w-6 text-primary" />
+          <h1 className="font-heading flex items-center gap-2 text-lg font-semibold text-ink sm:text-2xl">
+            <Icon name="trophy" className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
             Dashboard BIG SOCCER by iSCOUT
           </h1>
           <p className="mt-1 text-sm text-ink-muted">{roleTitle}</p>
@@ -142,8 +152,27 @@ export default function Dashboard() {
       </div>
 
       <Card>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          aria-expanded={filtersOpen}
+          aria-controls="dashboard-filtros"
+          className="mb-3 flex w-full items-center justify-between gap-2 text-sm font-medium text-ink sm:hidden"
+        >
+          <span className="flex items-center gap-2">
+            <Icon name="filter" className="h-4 w-4 text-primary" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary-text">
+                {activeFilterCount} {activeFilterCount === 1 ? "ativo" : "ativos"}
+              </span>
+            )}
+          </span>
+          <Icon name="chevronDown" className={`h-4 w-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+        </button>
         <form
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+          id="dashboard-filtros"
+          className={`${filtersOpen ? "grid" : "hidden"} grid-cols-2 gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-6`}
           onSubmit={(e) => e.preventDefault()}
         >
           <label>
@@ -199,7 +228,7 @@ export default function Dashboard() {
         </form>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {cards.map((m) => (
           <Card
             key={m.label}
@@ -209,16 +238,16 @@ export default function Dashboard() {
               type="button"
               onClick={m.to ? () => navigate(m.to as string) : undefined}
               disabled={!m.to}
-              className="flex w-full items-center gap-3 text-left disabled:cursor-default"
+              className="flex w-full items-center gap-2.5 text-left disabled:cursor-default sm:gap-3"
             >
               <span
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${
                   m.tone === "warning" ? "bg-warning/15 text-warning" : "bg-primary/15 text-primary"
                 }`}
               >
                 <Icon name={m.icon} className="h-5 w-5" />
               </span>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-ink-muted">{m.label}</p>
                 <p className="text-2xl font-semibold text-ink">{m.value}</p>
                 {m.sub && <p className="text-sm text-ink-muted">{m.sub}</p>}
@@ -227,14 +256,17 @@ export default function Dashboard() {
           </Card>
         ))}
         {role === "gestor" && (
-          <Card className="cursor-pointer transition-colors hover:border-primary/40">
-            <button type="button" onClick={() => navigate("/configuracoes")} className="flex w-full items-center gap-3 text-left">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted">
+          <Card className="col-span-2 cursor-pointer transition-colors hover:border-primary/40 sm:col-span-1">
+            <button type="button" onClick={() => navigate("/configuracoes")} className="flex w-full items-center gap-2.5 text-left sm:gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted sm:h-10 sm:w-10">
                 <Icon name="menu" className="h-5 w-5" />
               </span>
-              <div>
-                <p className="text-sm font-medium text-ink-muted">Administração</p>
-                <p className="text-base font-semibold text-ink">Configurações →</p>
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-muted">Administração</p>
+                  <p className="text-base font-semibold text-ink">Configurações</p>
+                </div>
+                <Icon name="arrowRight" className="h-4 w-4 shrink-0 text-ink-muted" />
               </div>
             </button>
           </Card>
@@ -262,7 +294,10 @@ export default function Dashboard() {
               role="link"
               aria-label={`Ver detalhes do treino de ${formatDate(t.sessionDate)}`}
               onKeyDown={(e) => {
-                if (e.key === "Enter") navigate(`/treinos/${t.id}`);
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/treinos/${t.id}`);
+                }
               }}
               className="cursor-pointer rounded-xl border border-line-soft bg-surface-2 p-3 outline-none hover:border-primary/40 focus-visible:bg-primary/10"
             >
@@ -308,7 +343,10 @@ export default function Dashboard() {
                   role="link"
                   aria-label={`Ver detalhes do treino de ${formatDate(t.sessionDate)}`}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") navigate(`/treinos/${t.id}`);
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(`/treinos/${t.id}`);
+                    }
                   }}
                   className={`group cursor-pointer border-b border-line-soft last:border-0 outline-none hover:bg-primary/5 focus-visible:bg-primary/10 ${
                     i % 2 === 1 ? "bg-surface-2/40" : ""
