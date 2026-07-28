@@ -170,7 +170,43 @@ export default function EditorSumula() {
       </Card>
 
       <Card title={`Escalação (${roster.length} atletas)`}>
-        <div className="overflow-x-auto">
+        {/* Mobile (<640px): lista de cards em vez da tabela min-w-[640px], que nunca
+            cabe na viewport e pode encadear o scroll interno pra página inteira. */}
+        <div className="flex flex-col gap-2 sm:hidden">
+          {roster.map((r) => (
+            <div key={r.jersey} data-testid="atleta-card" className="rounded-xl border border-line-soft bg-surface-2 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink">
+                    Colete {r.jersey} — {r.nome}
+                  </p>
+                  <p className="mt-1 text-sm text-ink-muted">Posição: {r.posicao}</p>
+                  <p className="text-sm text-ink-muted">Matrícula: {r.matricula || "—"}</p>
+                  <p className="flex items-center gap-1 text-sm text-secondary">
+                    {r.starter ? (
+                      <>
+                        <Icon name="check" className="h-4 w-4" /> Titular
+                      </>
+                    ) : (
+                      <span className="text-ink-muted">Reserva</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(r.jersey)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary"
+                  aria-label={`Remover ${r.nome}`}
+                >
+                  <Icon name="x" className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet/desktop (≥640px): tabela completa, scroll horizontal contido. */}
+        <div className="hidden overflow-x-auto overscroll-x-contain sm:block">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">

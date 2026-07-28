@@ -38,12 +38,18 @@
 html {
   font-family: var(--font-body);
   color-scheme: dark;
-  overflow-x: clip;
+  /* overflow-x: hidden (não clip) — clip tem suporte inconsistente em
+     navegadores mobile reais; hidden é o mais previsível como rede de
+     segurança. A correção de verdade é nunca ter conteúdo mais largo que a
+     viewport em telas pequenas (ver tabelas com hidden sm:block nas páginas). */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
-  overflow-x: clip;
+  overflow-x: hidden;
+  max-width: 100%;
   background: var(--color-canvas);
   color: var(--color-ink);
 }

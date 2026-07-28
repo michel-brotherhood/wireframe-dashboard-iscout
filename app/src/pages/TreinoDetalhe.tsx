@@ -174,7 +174,25 @@ export default function TreinoDetalhe() {
           {sumula.confirmedAt && <span className="text-ink-muted">{formatDateTime(sumula.confirmedAt)}</span>}
           <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} atletas</span>
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile (<640px): lista de cards em vez da tabela min-w-[480px]. */}
+        <ul className="flex flex-col gap-2 sm:hidden">
+          {sumula.entries.map((e) => (
+            <li key={e.jersey} data-testid="sumula-entry-card" className="rounded-xl border border-line-soft bg-surface-2 p-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold text-ink">
+                  Colete {e.jersey} — {e.nome}
+                </p>
+                <span className="shrink-0 text-secondary" aria-label={e.starter ? "Titular" : "Reserva"}>
+                  {e.starter ? <Icon name="check" className="h-4 w-4" /> : <span className="text-ink-muted">—</span>}
+                </span>
+              </div>
+              <p className="mt-1 text-ink-muted">Posição: {e.posicao}</p>
+            </li>
+          ))}
+        </ul>
+
+        {/* Tablet/desktop (≥640px): tabela completa, scroll horizontal contido. */}
+        <div className="hidden overflow-x-auto overscroll-x-contain sm:block">
           <table className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
