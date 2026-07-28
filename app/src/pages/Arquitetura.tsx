@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { diagrams } from "../data/diagrams";
+import type { DiagramKind } from "../data/diagrams";
 import { Card } from "../components/ui";
 import { Icon } from "../components/Icon";
+import type { IconName } from "../components/Icon";
 import { MermaidDiagram } from "../components/MermaidDiagram";
+
+const kindIcon: Record<DiagramKind, IconName> = {
+  flow: "network",
+  sequence: "share",
+  state: "check",
+  data: "clipboard",
+};
 
 export default function Arquitetura() {
   const [activeId, setActiveId] = useState(diagrams[0].id);
@@ -32,20 +41,25 @@ export default function Arquitetura() {
               type="button"
               aria-current={d.id === activeId}
               onClick={() => setActiveId(d.id)}
-              className={`shrink-0 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors lg:shrink ${
+              className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors lg:shrink ${
                 d.id === activeId
                   ? "border-primary/40 bg-primary/10 text-primary-text"
                   : "border-line bg-surface text-ink-muted hover:bg-surface-2 hover:text-ink"
               }`}
             >
+              <Icon name={kindIcon[d.kind]} className="h-4 w-4 shrink-0" />
               {d.title}
             </button>
           ))}
         </nav>
 
-        <Card title={active.title} icon={<Icon name="network" className="h-4 w-4" />} className="flex-1">
+        <Card
+          title={active.title}
+          icon={<Icon name={kindIcon[active.kind]} className="h-4 w-4" />}
+          className="min-w-0 flex-1"
+        >
           <p className="mb-4 text-sm text-ink-muted">{active.description}</p>
-          <MermaidDiagram key={active.id} source={active.source} title={active.title} />
+          <MermaidDiagram key={active.id} source={active.source} />
         </Card>
       </div>
     </div>

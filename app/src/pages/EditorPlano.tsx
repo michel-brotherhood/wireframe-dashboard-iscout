@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, Field, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { usePlanos } from "../state/PlanosContext";
+import type { Categoria, EtapaFuncionamento, Phase, PlanoAula, TeamLabel, Turma } from "../types";
 
 const TABS = ["1. Inicial", "2. Funcionamento", "3. Principal", "4. Observações"] as const;
 
@@ -11,6 +14,15 @@ const ESTACOES_OPTIONS = ["Com bola", "Sem bola", "Recreativo"];
 // Plano precisa ser criado com pelo menos 24h de antecedência da sessão.
 const HOJE_MOCK = "2026-07-02";
 const MIN_DATA = "2026-07-03";
+
+// Prazo de envio/aprovação: véspera da sessão, 18h — mesma convenção usada
+// nos dados mock da fila de Aprovações.
+function deadlineFor(sessionDate: string) {
+  const d = new Date(`${sessionDate}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  const iso = d.toISOString().slice(0, 10);
+  return `${iso}T18:00:00`;
+}
 
 function DiagramUpload() {
   return (
@@ -24,7 +36,7 @@ function DiagramUpload() {
           <Icon name="edit" className="h-4 w-4" /> Desenhar no Editor
         </PrimaryButton>
       </div>
-      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-faint sm:h-40 sm:w-72">
+      <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-muted sm:h-40 sm:w-72">
         Imagem do diagrama · 300×300px
       </div>
     </div>
@@ -92,7 +104,7 @@ function DynamicList({
             type="button"
             onClick={() => onRemove(i)}
             aria-label={`Remover ${label.toLowerCase()} ${i + 1}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-faint hover:bg-primary/10 hover:text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary"
           >
             <Icon name="x" className="h-4 w-4" />
           </button>
@@ -105,13 +117,21 @@ function DynamicList({
   );
 }
 
+let novoPlanoSeq = 1;
+
 export default function EditorPlano() {
+  const navigate = useNavigate();
+  const { addPlano } = usePlanos();
   const [tab, setTab] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [data, setData] = useState("2026-07-03");
+  const [unidade] = useState("Atibaia");
+  const [categoria, setCategoria] = useState("Sub-15");
+  const [turma, setTurma] = useState("Turma A");
   const [team, setTeam] = useState("Amarelo");
   const [fase, setFase] = useState("Ofensiva");
 
@@ -210,15 +230,49 @@ export default function EditorPlano() {
         setTab(firstInvalidTab);
       }
       setStatusIsError(true);
+      setJustSubmitted(false);
       setStatus("Corrija os campos obrigatórios destacados antes de submeter.");
       return;
     }
     if (total < 30 || total > 120) {
       setStatusIsError(true);
+      setJustSubmitted(false);
       setStatus("Duração total precisa ficar entre 30 e 120 minutos antes de submeter.");
       return;
     }
+
+    const novoPlano: PlanoAula = {
+      id: `plan-novo-${novoPlanoSeq++}`,
+      sessionDate: data,
+      unidade,
+      categoria: categoria as Categoria,
+      turma: turma as Turma,
+      team: team as TeamLabel,
+      coachName: team === "Amarelo" ? "João Silva" : "Maria Santos",
+      fase: fase as Phase,
+      status: "submitted",
+      deadlineAt: deadlineFor(data),
+      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, coordenacao, estacoes },
+      etapaFuncionamento: {
+        objetivo: funcObjetivo,
+        duracaoMin: funcDuracao,
+        tipo: funcTipo as EtapaFuncionamento["tipo"],
+        tema: funcTema,
+      },
+      etapaPrincipal: {
+        objetivo: principalObjetivo,
+        duracaoMin: principalDuracao,
+        subTemas,
+        orientacoes,
+        intervalo: { hidratacaoMin: hidratacao, repousoMin: repouso, instruirMin: instruir, ativarMin: ativar },
+      },
+      observacoes,
+      createdAt: new Date().toISOString(),
+    };
+    addPlano(novoPlano);
+
     setStatusIsError(false);
+    setJustSubmitted(true);
     setStatus("Plano submetido para aprovação.");
   }
 
@@ -244,7 +298,25 @@ export default function EditorPlano() {
               }}
             />
           </Field>
-          <Field label="Team" required>
+          <Field label="Unidade" required hint="Única unidade cadastrada nesta demonstração.">
+            <select className={inputClass} value={unidade} disabled>
+              <option>Atibaia</option>
+            </select>
+          </Field>
+          <Field label="Categoria" required>
+            <select className={inputClass} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+              <option>Sub-15</option>
+              <option>Sub-17</option>
+              <option>Sub-20</option>
+            </select>
+          </Field>
+          <Field label="Turma" required>
+            <select className={inputClass} value={turma} onChange={(e) => setTurma(e.target.value)}>
+              <option>Turma A</option>
+              <option>Turma B</option>
+            </select>
+          </Field>
+          <Field label="Team (colete)" required hint="Cor do colete — usada na súmula, não é o agrupamento da turma.">
             <select className={inputClass} value={team} onChange={(e) => setTeam(e.target.value)}>
               <option>Amarelo</option>
               <option>Azul</option>
@@ -286,6 +358,15 @@ export default function EditorPlano() {
           }`}
         >
           <Icon name={statusIsError ? "alert" : "check"} className="h-4 w-4" /> {status}
+          {justSubmitted && (
+            <button
+              type="button"
+              onClick={() => navigate("/planos/aprovacao")}
+              className="ml-1 font-medium underline underline-offset-2"
+            >
+              Ver fila de aprovação →
+            </button>
+          )}
         </p>
       )}
 
@@ -503,6 +584,7 @@ export default function EditorPlano() {
                 variant="secondary"
                 onClick={() => {
                   setStatusIsError(false);
+                  setJustSubmitted(false);
                   setStatus("Plano salvo como draft.");
                 }}
               >

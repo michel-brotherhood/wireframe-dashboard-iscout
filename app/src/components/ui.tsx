@@ -48,21 +48,25 @@ export function Card({
 const statusDot: Record<string, string> = {
   draft: "bg-ink-faint",
   submitted: "bg-warning",
+  changes_requested: "bg-warning",
   approved: "bg-secondary",
+  executed: "bg-secondary",
+  cancelled: "bg-ink-faint",
   confirmed: "bg-secondary",
-  rejected: "bg-primary",
   Executado: "bg-secondary",
   Draft: "bg-ink-faint",
 };
 
 const statusLabels: Record<string, string> = {
-  draft: "Draft",
-  submitted: "Submetido",
+  draft: "Rascunho",
+  submitted: "Aguardando Aprovação",
+  changes_requested: "Ajustes Solicitados",
   approved: "Aprovado",
+  executed: "Executado",
+  cancelled: "Cancelado",
   confirmed: "Confirmado",
-  rejected: "Rejeitado",
   Executado: "Executado",
-  Draft: "Draft",
+  Draft: "Rascunho",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -186,14 +190,14 @@ export function Field({
           {error}
         </span>
       ) : (
-        hint && <span className="mt-1 block text-xs text-ink-faint">{hint}</span>
+        hint && <span className="mt-1 block text-xs text-ink-muted">{hint}</span>
       )}
     </label>
   );
 }
 
 export const inputClass =
-  "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+  "w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
 
 export const inputErrorClass =
-  "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+  "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";

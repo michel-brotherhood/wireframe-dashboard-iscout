@@ -1,7 +1,10 @@
+export type DiagramKind = "flow" | "sequence" | "state" | "data";
+
 export interface DiagramDef {
   id: string;
   title: string;
   description: string;
+  kind: DiagramKind;
   source: string;
 }
 
@@ -10,6 +13,7 @@ export const diagrams: DiagramDef[] = [
     id: "arquitetura",
     title: "1 · Arquitetura do Sistema",
     description: "Frontend, API REST, camada de serviços e persistência.",
+    kind: "flow",
     source: `graph TB
     subgraph Frontend["FRONTEND — React + TypeScript + TailwindCSS"]
         PlanEditor["Editor de Plano<br/>4 Etapas"]
@@ -65,6 +69,7 @@ export const diagrams: DiagramDef[] = [
     id: "fases",
     title: "2 · Fluxo de 4 Fases",
     description: "Planejamento → Escalação → Execução → Análise.",
+    kind: "flow",
     source: `graph LR
     subgraph Phase1["FASE 1 — PLANEJAMENTO<br/>24h antes"]
         P1A["Treinador<br/>Cria Plano"]
@@ -107,6 +112,7 @@ export const diagrams: DiagramDef[] = [
     id: "ciclo-vida",
     title: "3 · Ciclo de Vida de um Treino",
     description: "Máquina de estados desde a criação do plano até a análise final.",
+    kind: "state",
     source: `stateDiagram-v2
     [*] --> PlanDraft: Treinador cria
 
@@ -152,6 +158,7 @@ export const diagrams: DiagramDef[] = [
     id: "fluxo-dashboard",
     title: "4 · Fluxo de Dados da Dashboard",
     description: "Do clique do usuário até a renderização dos cards, gráfico e tabela.",
+    kind: "flow",
     source: `graph TD
     User["Usuário<br/>Acessa Dashboard"]
 
@@ -195,6 +202,7 @@ export const diagrams: DiagramDef[] = [
     id: "criacao-plano",
     title: "5 · Fluxo de Criação de Plano",
     description: "Sequência completa: criar rascunho, preencher etapas, submeter para aprovação.",
+    kind: "sequence",
     source: `sequenceDiagram
     actor Coach as Treinador
     participant Frontend as Frontend
@@ -231,6 +239,7 @@ export const diagrams: DiagramDef[] = [
     id: "confirmacao-sumula",
     title: "6 · Fluxo de Confirmação de Súmula",
     description: "Criar súmula, adicionar jogadores, resolver nomes por fuzzy matching e confirmar.",
+    kind: "sequence",
     source: `sequenceDiagram
     actor Coach as Treinador
     participant Frontend as Frontend
@@ -286,6 +295,7 @@ export const diagrams: DiagramDef[] = [
     id: "execution-log",
     title: "7 · Fluxo de Execution Log",
     description: "Registro de tempos reais, cálculo de conformidade e geração de insights por IA (VLM).",
+    kind: "sequence",
     source: `sequenceDiagram
     actor Coach as Treinador
     participant Frontend as Frontend
@@ -322,6 +332,7 @@ export const diagrams: DiagramDef[] = [
     id: "modelo-dados",
     title: "8 · Modelo de Dados (ER)",
     description: "Entidades principais e relacionamentos no PostgreSQL.",
+    kind: "data",
     source: `erDiagram
     USERS ||--o{ PLAN_AULA : creates
     USERS ||--o{ MATCH_SUMULA : creates
@@ -410,6 +421,7 @@ export const diagrams: DiagramDef[] = [
     id: "conformidade-calculo",
     title: "9 · Conformidade — Cálculo",
     description: "Como o score de 0 a 100% é composto a partir de fase, tempos, exercícios e desvios.",
+    kind: "flow",
     source: `graph TD
     Input["Execution Log<br/>Tempos Reais · Desvios · Exercícios"]
 
@@ -457,6 +469,7 @@ export const diagrams: DiagramDef[] = [
     id: "endpoints-api",
     title: "10 · Endpoints da API",
     description: "Mapa completo das rotas REST expostas pelo backend FastAPI.",
+    kind: "flow",
     source: `graph TB
     API["API REST — FastAPI"]
 

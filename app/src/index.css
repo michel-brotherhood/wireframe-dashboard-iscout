@@ -27,8 +27,8 @@
   --color-line-soft: #1a2c48; /* subtle divider */
 
   --color-ink: #f5f7fb; /* primary text */
-  --color-ink-muted: #93a4c6; /* secondary text */
-  --color-ink-faint: #5d6e90; /* placeholder / tertiary text */
+  --color-ink-muted: #93a4c6; /* secondary/tertiary text — AA-safe (≥4.5:1) on surface/surface-2 */
+  --color-ink-faint: #5d6e90; /* decorative only (status dots, underline hints) — fails AA for text, do not use for readable copy */
 
   /* Team colors — literal data (jersey color), not brand decoration */
   --color-team-amarelo: #fbbf24;
@@ -46,6 +46,15 @@ body {
   overflow-x: clip;
   background: var(--color-canvas);
   color: var(--color-ink);
+}
+
+/* Below md, a fixed bottom tab bar (~64px) overlaps the viewport. Reserve
+   that space so native scroll-into-view (focus, anchor jumps) never lands
+   a target underneath it. */
+@media (max-width: 767px) {
+  html {
+    scroll-padding-bottom: 80px;
+  }
 }
 
 h1, h2, h3, .font-heading {

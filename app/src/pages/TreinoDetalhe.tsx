@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { treinos } from "../data/mockData";
-import {
-  Card,
-  ProgressBar,
-  StatusBadge,
-  PrimaryButton,
-  Tooltip,
-  conformanceTextColor,
-} from "../components/ui";
+import { Card, StatusBadge, PrimaryButton } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { useRole } from "../state/RoleContext";
 
 function formatDateTime(iso?: string) {
   if (!iso) return "-";
@@ -35,6 +29,8 @@ const impactStyles: Record<string, string> = {
 export default function TreinoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { role } = useRole();
+  const canEdit = role !== "responsavel";
   const treino = treinos.find((t) => t.id === id) ?? treinos[0];
   const { plano, sumula, executionLog } = treino;
   const totalPlanejado =
@@ -69,22 +65,24 @@ export default function TreinoDetalhe() {
           </Link>
           <div>
             <h1 className="font-heading text-lg font-semibold text-ink sm:text-xl">
-              Treino: {plano.sessionDate.split("-").reverse().slice(0, 2).join("/")} · Team {treino.team} ·{" "}
-              {treino.coachName}
+              Treino: {plano.sessionDate.split("-").reverse().slice(0, 2).join("/")} · {treino.categoria} ·{" "}
+              {treino.turma} · {treino.coachName}
             </h1>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
-            <Icon name="edit" className="h-4 w-4" /> Editar
-          </PrimaryButton>
-          <PrimaryButton variant="secondary" onClick={handleExport}>
-            <Icon name="download" className="h-4 w-4" /> Exportar
-          </PrimaryButton>
-          <PrimaryButton variant="secondary" onClick={handleShare}>
-            <Icon name="share" className="h-4 w-4" /> Compartilhar
-          </PrimaryButton>
-        </div>
+        {canEdit && (
+          <div className="flex flex-wrap gap-2">
+            <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
+              <Icon name="edit" className="h-4 w-4" /> Editar
+            </PrimaryButton>
+            <PrimaryButton variant="secondary" onClick={handleExport}>
+              <Icon name="download" className="h-4 w-4" /> Exportar
+            </PrimaryButton>
+            <PrimaryButton variant="secondary" onClick={handleShare}>
+              <Icon name="share" className="h-4 w-4" /> Compartilhar
+            </PrimaryButton>
+          </div>
+        )}
       </div>
 
       {status && (
@@ -98,7 +96,7 @@ export default function TreinoDetalhe() {
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={plano.status} />
           {plano.approvedAt && (
-            <span className="text-ink-faint">
+            <span className="text-ink-muted">
               {formatDateTime(plano.approvedAt)} por {plano.approvedBy}
             </span>
           )}
@@ -146,20 +144,22 @@ export default function TreinoDetalhe() {
         title="Seção 2 · Súmula"
         icon={<Icon name="ball" className="h-4 w-4" />}
         headerAction={
-          <PrimaryButton variant="secondary" onClick={() => navigate("/sumulas/novo")}>
-            <Icon name="edit" className="h-4 w-4" /> Editar Escalação
-          </PrimaryButton>
+          canEdit ? (
+            <PrimaryButton variant="secondary" onClick={() => navigate("/sumulas/novo")}>
+              <Icon name="edit" className="h-4 w-4" /> Editar Escalação
+            </PrimaryButton>
+          ) : undefined
         }
       >
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={sumula.status} />
-          {sumula.confirmedAt && <span className="text-ink-faint">{formatDateTime(sumula.confirmedAt)}</span>}
-          <span className="ml-auto text-ink-faint">Escalação: {sumula.entries.length} jogadores</span>
+          {sumula.confirmedAt && <span className="text-ink-muted">{formatDateTime(sumula.confirmedAt)}</span>}
+          <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} jogadores</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
                 <th scope="col" className="px-3 py-2">Jersey</th>
                 <th scope="col" className="px-3 py-2">Nome</th>
                 <th scope="col" className="px-3 py-2">Posição</th>
@@ -187,7 +187,7 @@ export default function TreinoDetalhe() {
         <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
             <StatusBadge status={executionLog.status} />
-            {executionLog.confirmedAt && <span className="text-ink-faint">{formatDateTime(executionLog.confirmedAt)}</span>}
+            {executionLog.confirmedAt && <span className="text-ink-muted">{formatDateTime(executionLog.confirmedAt)}</span>}
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -231,61 +231,42 @@ export default function TreinoDetalhe() {
         </Card>
       ) : (
         <Card title="Seção 3 · Execution Log" icon={<Icon name="barChart" className="h-4 w-4" />}>
-          <p className="text-sm text-ink-faint">Execução ainda não registrada para este treino.</p>
+          <p className="text-sm text-ink-muted">Execução ainda não registrada para este treino.</p>
         </Card>
       )}
 
-      {/* Seção 4: Conformidade */}
+      {/* Seção 4: Avaliação */}
       {executionLog && (
-        <Card title="Seção 4 · Conformidade" icon={<Icon name="lineChart" className="h-4 w-4" />}>
-          <div className="mb-3 flex items-center gap-3">
-            <span className={`text-2xl font-bold ${conformanceTextColor(executionLog.conformanceScore)}`}>
-              {executionLog.conformanceScore}%
-            </span>
-            <div className="flex-1">
-              <ProgressBar value={executionLog.conformanceScore} />
-            </div>
-          </div>
+        <Card title="Seção 4 · Avaliação" icon={<Icon name="lineChart" className="h-4 w-4" />}>
+          <p className="flex items-start gap-2 text-sm text-ink-muted">
+            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            Avaliação pendente de metodologia definida pela coordenação pedagógica. Indicadores pedagógicos e
+            metodologia de conformidade pendentes de validação.
+          </p>
 
-          <div className="mb-4 grid grid-cols-1 gap-1.5 text-sm text-ink-muted sm:grid-cols-2">
-            <p className="flex items-center gap-1.5"><Icon name="check" className="h-3.5 w-3.5 text-secondary" /> Fase: {plano.fase} (match com planejamento)</p>
-            <p className="flex items-center gap-1.5"><Icon name="alert" className="h-3.5 w-3.5 text-warning" /> Tempos: diferença total registrada nas 3 etapas</p>
-            <p className="flex items-center gap-1.5"><Icon name="check" className="h-3.5 w-3.5 text-secondary" /> Exercícios: todos os 3 exercícios executados</p>
-            <p className="flex items-center gap-1.5"><Icon name="alert" className="h-3.5 w-3.5 text-warning" /> Desvios: {executionLog.desvios.length} desvios registrados</p>
-          </div>
-
-          <div className="rounded-xl border border-line-soft bg-surface-2 p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink">
-              <Icon name="bot" className="h-4 w-4 text-primary" /> Insights de IA
+          <div className="mt-4 rounded-xl border border-line-soft bg-surface-2 p-3">
+            <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-ink">
+              <Icon name="bot" className="h-4 w-4 text-primary" /> Inteligência Artificial
             </p>
-            <ul className="flex flex-col gap-1 text-sm text-ink-muted">
-              {executionLog.insights.map((insight, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span aria-hidden="true">•</span>
-                  <Tooltip text={insight.detail}>
-                    <button
-                      type="button"
-                      className="rounded text-left underline decoration-dotted decoration-ink-faint underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    >
-                      {insight.text}
-                    </button>
-                  </Tooltip>
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm text-ink-muted">
+              Área reservada para futuros insights de inteligência artificial, após definição dos indicadores e
+              geração de uma base de dados confiável.
+            </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
-              <Icon name="edit" className="h-4 w-4" /> Editar
-            </PrimaryButton>
-            <PrimaryButton variant="secondary" onClick={handleExport}>
-              <Icon name="download" className="h-4 w-4" /> Exportar Relatório
-            </PrimaryButton>
-            <PrimaryButton variant="secondary" onClick={handleShare}>
-              <Icon name="share" className="h-4 w-4" /> Compartilhar
-            </PrimaryButton>
-          </div>
+          {canEdit && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <PrimaryButton variant="secondary" onClick={() => navigate("/planos/novo")}>
+                <Icon name="edit" className="h-4 w-4" /> Editar
+              </PrimaryButton>
+              <PrimaryButton variant="secondary" onClick={handleExport}>
+                <Icon name="download" className="h-4 w-4" /> Exportar Relatório
+              </PrimaryButton>
+              <PrimaryButton variant="secondary" onClick={handleShare}>
+                <Icon name="share" className="h-4 w-4" /> Compartilhar
+              </PrimaryButton>
+            </div>
+          )}
         </Card>
       )}
     </div>

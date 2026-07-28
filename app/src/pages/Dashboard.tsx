@@ -1,76 +1,127 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
-import { treinos, conformidadePorDia, dashboardMetrics } from "../data/mockData";
-import {
-  Card,
-  ProgressBar,
-  StatusBadge,
-  TeamBadge,
-  PrimaryButton,
-  conformanceColor,
-  conformanceTextColor,
-  inputClass,
-} from "../components/ui";
+import { treinos, isPastDeadline, NOW_MOCK } from "../data/mockData";
+import { Card, StatusBadge, PrimaryButton, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import type { IconName } from "../components/Icon";
+import { usePlanos } from "../state/PlanosContext";
+import { useRole } from "../state/RoleContext";
+import ResumoResponsavel from "./ResumoResponsavel";
+import type { PlanoAula, Treino } from "../types";
+
+const TODAY = NOW_MOCK.slice(0, 10);
 
 function formatDate(iso: string) {
   const [, m, d] = iso.split("-");
   return `${d}/${m}`;
 }
 
-const metricCards: { icon: IconName; label: string; total: number; sub: string }[] = [
-  {
-    icon: "clipboard",
-    label: "Planos",
-    total: dashboardMetrics.planosTotal,
-    sub: `${dashboardMetrics.planosAprovados} Aprovados`,
-  },
-  {
-    icon: "ball",
-    label: "Súmulas",
-    total: dashboardMetrics.sumulasTotal,
-    sub: `${dashboardMetrics.sumulasConfirmadas} Confirmadas`,
-  },
-  {
-    icon: "barChart",
-    label: "Execuções",
-    total: dashboardMetrics.execucoesTotal,
-    sub: `${dashboardMetrics.execucoesConfirmadas} Confirmadas`,
-  },
-];
-
-function ConformanceDot(props: { cx?: number; cy?: number; payload?: { conformidade: number } }) {
-  const { cx, cy, payload } = props;
-  if (cx === undefined || cy === undefined || !payload) return null;
-  const color =
-    payload.conformidade >= 80 ? "#d3dc61" : payload.conformidade >= 60 ? "#f5b942" : "#e7254d";
-  return <circle cx={cx} cy={cy} r={4} fill={color} stroke="#101f38" strokeWidth={1.5} />;
+function treinoSemPlanoAprovado(t: Treino) {
+  return Boolean(t.executionLog) && t.plano.status !== "approved" && t.plano.status !== "executed";
 }
+
+interface MetricCard {
+  icon: IconName;
+  label: string;
+  value: number | string;
+  sub?: string;
+  to?: string;
+  tone?: "default" | "warning";
+}
+
+function buildCards(role: string, planos: PlanoAula[], treinosList: Treino[]): MetricCard[] {
+  const aguardando = planos.filter((p) => p.status === "submitted").length;
+  const ajustes = planos.filter((p) => p.status === "changes_requested").length;
+  const foraDoPrazo = planos.filter((p) => isPastDeadline(p)).length;
+  const proximas = planos.filter((p) => p.status === "approved" && p.sessionDate >= TODAY).length;
+  const sumulasPendentes = treinosList.filter((t) => t.sumula.status === "draft").length;
+  const semPlano = treinosList.filter(treinoSemPlanoAprovado).length;
+
+  if (role === "treinador") {
+    return [
+      { icon: "calendar", label: "Próximas Aulas", value: proximas },
+      { icon: "clipboard", label: "Planos em Rascunho", value: planos.filter((p) => p.status === "draft").length },
+      { icon: "alert", label: "Planos Devolvidos", value: ajustes, sub: "Ajustes solicitados", tone: "warning" },
+      { icon: "check", label: "Planos Aprovados", value: planos.filter((p) => p.status === "approved").length },
+    ];
+  }
+
+  if (role === "gestor") {
+    const turmas = new Set(treinosList.map((t) => `${t.categoria}-${t.turma}`)).size;
+    const treinadores = new Set(treinosList.map((t) => t.coachName)).size;
+    const categorias = new Set(treinosList.map((t) => t.categoria)).size;
+    return [
+      { icon: "network", label: "Turmas Ativas", value: turmas },
+      { icon: "clipboard", label: "Treinadores", value: treinadores },
+      { icon: "ball", label: "Categorias", value: categorias },
+      { icon: "calendar", label: "Planos Fora do Prazo", value: foraDoPrazo, tone: "warning" },
+      { icon: "barChart", label: "Executadas sem Plano Aprovado", value: semPlano, tone: "warning" },
+    ];
+  }
+
+  // head_coach (padrão) — os 6 cards operacionais definidos no briefing.
+  return [
+    { icon: "alert", label: "Aguardando Aprovação", value: aguardando, to: "/planos/aprovacao" },
+    { icon: "edit", label: "Ajustes Solicitados", value: ajustes, to: "/planos/aprovacao", tone: "warning" },
+    { icon: "calendar", label: "Fora do Prazo", value: foraDoPrazo, to: "/planos/aprovacao", tone: "warning" },
+    { icon: "clipboard", label: "Próximas Aulas", value: proximas },
+    { icon: "ball", label: "Súmulas Pendentes", value: sumulasPendentes },
+    { icon: "barChart", label: "Executadas sem Plano Aprovado", value: semPlano, tone: "warning" },
+  ];
+}
+
+const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: "Todos", label: "Todos" },
+  { value: "draft", label: "Rascunho" },
+  { value: "submitted", label: "Aguardando Aprovação" },
+  { value: "changes_requested", label: "Ajustes Solicitados" },
+  { value: "approved", label: "Aprovado" },
+  { value: "executed", label: "Executado" },
+  { value: "cancelled", label: "Cancelado" },
+  { value: "fora_do_prazo", label: "Fora do Prazo" },
+];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { role } = useRole();
+  const { planos } = usePlanos();
+
   const [dataFilter, setDataFilter] = useState("2026-07-02");
-  const [teamFilter, setTeamFilter] = useState<string>("Todos");
-  const [statusFilter, setStatusFilter] = useState<string>("Todos");
+  const [unidadeFilter, setUnidadeFilter] = useState("Todas");
+  const [categoriaFilter, setCategoriaFilter] = useState("Todas");
+  const [turmaFilter, setTurmaFilter] = useState("Todas");
+  const [treinadorFilter, setTreinadorFilter] = useState("Todos");
+  const [statusFilter, setStatusFilter] = useState("Todos");
+
+  const unidades = useMemo(() => Array.from(new Set(treinos.map((t) => t.unidade))), []);
+  const categorias = useMemo(() => Array.from(new Set(treinos.map((t) => t.categoria))), []);
+  const turmas = useMemo(() => Array.from(new Set(treinos.map((t) => t.turma))), []);
+  const treinadores = useMemo(() => Array.from(new Set(treinos.map((t) => t.coachName))), []);
 
   const filteredTreinos = useMemo(() => {
     return treinos.filter((t) => {
       if (dataFilter && t.sessionDate > dataFilter) return false;
-      if (teamFilter !== "Todos" && t.team !== teamFilter) return false;
-      if (statusFilter !== "Todos" && t.status !== statusFilter) return false;
+      if (unidadeFilter !== "Todas" && t.unidade !== unidadeFilter) return false;
+      if (categoriaFilter !== "Todas" && t.categoria !== categoriaFilter) return false;
+      if (turmaFilter !== "Todas" && t.turma !== turmaFilter) return false;
+      if (treinadorFilter !== "Todos" && t.coachName !== treinadorFilter) return false;
+      if (statusFilter === "fora_do_prazo" && !isPastDeadline(t.plano)) return false;
+      else if (statusFilter !== "Todos" && statusFilter !== "fora_do_prazo" && t.plano.status !== statusFilter) return false;
       return true;
     });
-  }, [dataFilter, teamFilter, statusFilter]);
+  }, [dataFilter, unidadeFilter, categoriaFilter, turmaFilter, treinadorFilter, statusFilter]);
+
+  if (role === "responsavel") {
+    return <ResumoResponsavel />;
+  }
+
+  const cards = buildCards(role, planos, treinos);
+  const roleTitle =
+    role === "gestor"
+      ? "Visão geral da operação"
+      : role === "treinador"
+        ? "Minhas aulas e planos"
+        : "Painel central de gestão pedagógica e operacional";
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,130 +129,133 @@ export default function Dashboard() {
         <div>
           <h1 className="font-heading flex items-center gap-2 text-xl font-semibold text-ink sm:text-2xl">
             <Icon name="trophy" className="h-6 w-6 text-primary" />
-            Dashboard de Treinos
+            Dashboard BIG SOCCER by iSCOUT
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">Visão geral de planos, súmulas e execuções</p>
+          <p className="mt-1 text-sm text-ink-muted">{roleTitle}</p>
         </div>
-        <PrimaryButton onClick={() => navigate("/planos/novo")}>
-          <Icon name="plus" className="h-4 w-4" />
-          Novo Treino
-        </PrimaryButton>
+        {role === "treinador" && (
+          <PrimaryButton onClick={() => navigate("/planos/novo")}>
+            <Icon name="plus" className="h-4 w-4" />
+            Novo Plano
+          </PrimaryButton>
+        )}
       </div>
 
       <Card>
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
           onSubmit={(e) => e.preventDefault()}
         >
-          <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-ink-muted">Data (até)</span>
-            <input
-              type="date"
-              value={dataFilter}
-              onChange={(e) => setDataFilter(e.target.value)}
-              className={inputClass}
-            />
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Período (até)</span>
+            <input type="date" value={dataFilter} onChange={(e) => setDataFilter(e.target.value)} className={inputClass} />
           </label>
-          <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-ink-muted">Team</span>
-            <select
-              className={inputClass}
-              value={teamFilter}
-              onChange={(e) => setTeamFilter(e.target.value)}
-            >
-              <option>Todos</option>
-              <option>Amarelo</option>
-              <option>Azul</option>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Unidade</span>
+            <select className={inputClass} value={unidadeFilter} onChange={(e) => setUnidadeFilter(e.target.value)}>
+              <option>Todas</option>
+              {unidades.map((u) => (
+                <option key={u}>{u}</option>
+              ))}
             </select>
           </label>
-          <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-ink-muted">Status</span>
-            <select
-              className={inputClass}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Categoria</span>
+            <select className={inputClass} value={categoriaFilter} onChange={(e) => setCategoriaFilter(e.target.value)}>
+              <option>Todas</option>
+              {categorias.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Turma</span>
+            <select className={inputClass} value={turmaFilter} onChange={(e) => setTurmaFilter(e.target.value)}>
+              <option>Todas</option>
+              {turmas.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Treinador</span>
+            <select className={inputClass} value={treinadorFilter} onChange={(e) => setTreinadorFilter(e.target.value)}>
               <option>Todos</option>
-              <option>Executado</option>
-              <option>Draft</option>
+              {treinadores.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-ink-muted">Status</span>
+            <select className={inputClass} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              {STATUS_FILTER_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </label>
         </form>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {metricCards.map((m) => (
-          <Card key={m.label}>
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        {cards.map((m) => (
+          <Card
+            key={m.label}
+            className={m.to ? "cursor-pointer transition-colors hover:border-primary/40" : ""}
+          >
+            <button
+              type="button"
+              onClick={m.to ? () => navigate(m.to as string) : undefined}
+              disabled={!m.to}
+              className="flex w-full items-center gap-3 text-left disabled:cursor-default"
+            >
+              <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  m.tone === "warning" ? "bg-warning/15 text-warning" : "bg-primary/15 text-primary"
+                }`}
+              >
                 <Icon name={m.icon} className="h-5 w-5" />
               </span>
               <div>
                 <p className="text-sm font-medium text-ink-muted">{m.label}</p>
-                <p className="text-2xl font-semibold text-ink">{m.total} Total</p>
-                <p className="text-sm text-secondary">{m.sub}</p>
+                <p className="text-2xl font-semibold text-ink">{m.value}</p>
+                {m.sub && <p className="text-sm text-ink-muted">{m.sub}</p>}
               </div>
-            </div>
+            </button>
           </Card>
         ))}
+        {role === "gestor" && (
+          <Card className="cursor-pointer transition-colors hover:border-primary/40">
+            <button type="button" onClick={() => navigate("/configuracoes")} className="flex w-full items-center gap-3 text-left">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted">
+                <Icon name="menu" className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-ink-muted">Administração</p>
+                <p className="text-base font-semibold text-ink">Configurações →</p>
+              </div>
+            </button>
+          </Card>
+        )}
       </div>
 
-      <Card>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-2 text-sm font-medium text-ink-muted">
-            <Icon name="lineChart" className="h-4 w-4 text-primary" /> Conformidade Média
-          </p>
-          <p className={`text-lg font-semibold ${conformanceTextColor(dashboardMetrics.conformidadeMedia)}`}>
-            {dashboardMetrics.conformidadeMedia}%
-          </p>
-        </div>
-        <div className="mt-2">
-          <ProgressBar value={dashboardMetrics.conformidadeMedia} />
-        </div>
-      </Card>
-
-      <Card title="Conformidade por Dia" icon={<Icon name="lineChart" className="h-4 w-4" />}>
-        <div className="h-64 w-full" role="img" aria-label="Gráfico de linha mostrando conformidade por dia da semana, variando entre 58% e 92%">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={conformidadePorDia} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#263a5c" />
-              <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "#93a4c6" }} axisLine={{ stroke: "#263a5c" }} tickLine={false} />
-              <YAxis
-                domain={[0, 100]}
-                tickFormatter={(v) => `${v}%`}
-                tick={{ fontSize: 12, fill: "#93a4c6" }}
-                axisLine={{ stroke: "#263a5c" }}
-                tickLine={false}
-                width={44}
-              />
-              <Tooltip
-                formatter={(value) => [`${value}%`, "Conformidade"]}
-                contentStyle={{ background: "#182b4a", border: "1px solid #263a5c", borderRadius: 8, color: "#f5f7fb" }}
-                labelStyle={{ color: "#93a4c6" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="conformidade"
-                stroke="#e7254d"
-                strokeWidth={2}
-                dot={<ConformanceDot />}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <Card title="Indicadores Pedagógicos" icon={<Icon name="alert" className="h-4 w-4 text-warning" />}>
+        <p className="text-sm text-ink-muted">
+          Indicadores pedagógicos e metodologia de conformidade pendentes de validação.
+        </p>
       </Card>
 
       <Card title="Últimos Treinos" icon={<Icon name="calendar" className="h-4 w-4" />} className="p-0 sm:p-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
                 <th scope="col" className="px-4 py-3">Data</th>
-                <th scope="col" className="px-4 py-3">Team</th>
-                <th scope="col" className="px-4 py-3">Coach</th>
+                <th scope="col" className="px-4 py-3">Turma</th>
+                <th scope="col" className="px-4 py-3">Treinador</th>
                 <th scope="col" className="px-4 py-3">Status</th>
-                <th scope="col" className="px-4 py-3">Conformidade</th>
                 <th scope="col" className="px-4 py-3 sr-only">Ações</th>
               </tr>
             </thead>
@@ -221,26 +275,19 @@ export default function Dashboard() {
                   }`}
                 >
                   <td className="px-4 py-3 font-medium text-ink">{formatDate(t.sessionDate)}</td>
-                  <td className="px-4 py-3">
-                    <TeamBadge team={t.team} />
+                  <td className="px-4 py-3 text-ink-muted">
+                    {t.categoria} · {t.turma}
                   </td>
                   <td className="px-4 py-3 text-ink-muted">{t.coachName}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={t.status === "Executado" ? "Executado" : "Draft"} />
-                  </td>
-                  <td className="px-4 py-3">
-                    {t.conformance !== undefined ? (
-                      <div className="flex items-center gap-2">
-                        <span className={`w-10 text-xs font-semibold ${conformanceTextColor(t.conformance)}`}>
-                          {t.conformance}%
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusBadge status={t.plano.status} />
+                      {treinoSemPlanoAprovado(t) && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-text">
+                          Sem plano aprovado
                         </span>
-                        <div className="w-24">
-                          <ProgressBar value={t.conformance} colorClass={conformanceColor(t.conformance)} size="sm" />
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-ink-faint">-</span>
-                    )}
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-primary-text opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -252,12 +299,8 @@ export default function Dashboard() {
             </tbody>
           </table>
         </div>
-        {filteredTreinos.length >= 10 && (
-          <div className="border-t border-line-soft px-4 py-3 text-center">
-            <button type="button" className="text-sm font-medium text-primary-text hover:underline">
-              Ver mais
-            </button>
-          </div>
+        {filteredTreinos.length === 0 && (
+          <p className="p-4 text-sm text-ink-muted">Nenhum treino encontrado com os filtros atuais.</p>
         )}
       </Card>
     </div>
