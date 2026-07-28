@@ -247,11 +247,14 @@ export default function Dashboard() {
               >
                 <Icon name={m.icon} className="h-5 w-5" />
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-ink-muted">{m.label}</p>
-                <p className="text-2xl font-semibold text-ink">{m.value}</p>
+                {/* Mobile: valor empilhado sob o rótulo (card estreito de 2 col). */}
+                <p className="text-2xl font-semibold text-ink sm:hidden">{m.value}</p>
                 {m.sub && <p className="text-sm text-ink-muted">{m.sub}</p>}
               </div>
+              {/* Desktop/tablet: valor grande à direita — preenche o card e vira KPI tile. */}
+              <p className="hidden shrink-0 text-3xl font-semibold text-ink sm:block">{m.value}</p>
             </button>
           </Card>
         ))}
