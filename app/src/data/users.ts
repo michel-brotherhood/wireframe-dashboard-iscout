@@ -40,12 +40,46 @@ export const USERS: AppUser[] = [
     coachName: "Maria Santos",
   },
   {
+    id: "u-gerson",
+    nome: "Gerson",
+    email: "gerson@bigsoccer.com",
+    role: "treinador",
+    cargo: "Técnico",
+    // Atende a Sub-13 Turma A.
+    escopo: { unidade: "Atibaia", categorias: ["Sub-13"], turmas: ["Turma A"] },
+    coachName: "Gerson",
+  },
+  {
     id: "u-roberto",
     nome: "Roberto Lima",
     email: "roberto.lima@bigsoccer.com",
     role: "gestor",
     cargo: "Gestor",
     // Visão administrativa ampla — enxerga toda a operação (ver escopoContem).
+    escopo: {
+      unidade: "Atibaia",
+      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      turmas: ["Turma A", "Turma B"],
+    },
+  },
+  {
+    id: "u-raspada",
+    nome: "Raspada",
+    email: "raspada@bigsoccer.com",
+    role: "gestor",
+    cargo: "Gestor",
+    escopo: {
+      unidade: "Atibaia",
+      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      turmas: ["Turma A", "Turma B"],
+    },
+  },
+  {
+    id: "u-mario",
+    nome: "Mário",
+    email: "mario@bigsoccer.com",
+    role: "gestor",
+    cargo: "Gestor",
     escopo: {
       unidade: "Atibaia",
       categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],

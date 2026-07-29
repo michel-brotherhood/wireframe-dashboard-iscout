@@ -5,6 +5,7 @@ import logoCompact from "../assets/brand/marca-compacta.png";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
 import { useCurrentUser, useSession } from "../state/SessionContext";
+import { NotificationBell } from "./NotificationBell";
 import type { Role } from "../types";
 
 interface NavItem {
@@ -176,6 +177,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <Icon name={referenceNavItem.icon} className="h-4 w-4" />
               </a>
             )}
+            <NotificationBell />
             <UserMenu />
           </div>
         </div>
