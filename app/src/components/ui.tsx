@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
 
 // Fluxo do protocolo de intervalo: Hidratar → Repousar → Instruir → Ativar →
@@ -223,3 +223,146 @@ export const inputClass =
 
 export const inputErrorClass =
   "w-full rounded-xl border border-primary-text bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-primary-text focus:outline-none focus:ring-2 focus:ring-primary/25 [color-scheme:dark]";
+
+function chipClass(active: boolean) {
+  return `inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+    active
+      ? "border-primary bg-primary/10 text-primary-text"
+      : "border-line bg-surface-2 text-ink-muted hover:border-ink-faint hover:text-ink"
+  }`;
+}
+
+// Grupo de checkboxes em formato de chips ("marque todas que se aplicam"), com
+// opção "Outro (texto)" opcional. Um valor fora de `options` é tratado como o
+// texto do "Outro". Reduz superfície de texto aberto nos formulários.
+export function CheckboxGroup({
+  options,
+  value,
+  onChange,
+  allowOther = false,
+  otherPlaceholder = "Especifique...",
+}: {
+  options: string[];
+  value: string[];
+  onChange: (next: string[]) => void;
+  allowOther?: boolean;
+  otherPlaceholder?: string;
+}) {
+  const otherValue = value.find((v) => !options.includes(v)) ?? "";
+  const [otherOn, setOtherOn] = useState(otherValue !== "");
+
+  function toggle(opt: string) {
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
+  }
+  function setOther(text: string) {
+    const base = value.filter((v) => options.includes(v));
+    onChange(text.trim() ? [...base, text] : base);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const checked = value.includes(opt);
+          return (
+            <label key={opt} className={chipClass(checked)}>
+              <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggle(opt)} />
+              {checked && <Icon name="check" className="h-3.5 w-3.5" />}
+              {opt}
+            </label>
+          );
+        })}
+        {allowOther && (
+          <label className={chipClass(otherOn)}>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={otherOn}
+              onChange={(e) => {
+                setOtherOn(e.target.checked);
+                if (!e.target.checked) setOther("");
+              }}
+            />
+            {otherOn && <Icon name="check" className="h-3.5 w-3.5" />}
+            Outro
+          </label>
+        )}
+      </div>
+      {allowOther && otherOn && (
+        <input
+          className={inputClass}
+          placeholder={otherPlaceholder}
+          value={otherValue}
+          onChange={(e) => setOther(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Grupo de escolha única (radio) em formato de chips, com "Outro (texto)"
+// opcional. `value` fora de `options` (e não vazio) é tratado como texto livre.
+export function RadioGroup({
+  options,
+  value,
+  onChange,
+  allowOther = false,
+  otherPlaceholder = "Especifique...",
+}: {
+  options: string[];
+  value: string;
+  onChange: (next: string) => void;
+  allowOther?: boolean;
+  otherPlaceholder?: string;
+}) {
+  const isCustom = value !== "" && !options.includes(value);
+  const [otherOn, setOtherOn] = useState(isCustom);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = !otherOn && value === opt;
+          return (
+            <label key={opt} className={chipClass(active)}>
+              <input
+                type="radio"
+                className="sr-only"
+                checked={active}
+                onChange={() => {
+                  setOtherOn(false);
+                  onChange(opt);
+                }}
+              />
+              {active && <Icon name="check" className="h-3.5 w-3.5" />}
+              {opt}
+            </label>
+          );
+        })}
+        {allowOther && (
+          <label className={chipClass(otherOn)}>
+            <input
+              type="radio"
+              className="sr-only"
+              checked={otherOn}
+              onChange={() => {
+                setOtherOn(true);
+                onChange("");
+              }}
+            />
+            {otherOn && <Icon name="check" className="h-3.5 w-3.5" />}
+            Outro
+          </label>
+        )}
+      </div>
+      {allowOther && otherOn && (
+        <input
+          className={inputClass}
+          placeholder={otherPlaceholder}
+          value={isCustom ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}

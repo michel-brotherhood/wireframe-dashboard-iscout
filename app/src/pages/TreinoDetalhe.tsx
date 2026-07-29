@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { treinos } from "../data/mockData";
-import { Card, IntervaloFlow, StatusBadge, PrimaryButton } from "../components/ui";
+import { Card, IntervaloFlow, StatusBadge, PrimaryButton, TeamBadge } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { useRole } from "../state/SessionContext";
 
@@ -105,6 +105,22 @@ export default function TreinoDetalhe() {
           </span>
         </div>
 
+        {plano.status === "changes_requested" && plano.reviewComment && (
+          <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3">
+            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <div className="min-w-0 text-sm">
+              <p className="font-semibold text-warning">Ajustes solicitados pelo Head Coach</p>
+              <p className="mt-0.5 text-ink">{plano.reviewComment}</p>
+              {plano.reviewedBy && (
+                <p className="mt-1 text-xs text-ink-muted">
+                  {plano.reviewedBy}
+                  {plano.reviewedAt ? ` · ${formatDateTime(plano.reviewedAt)}` : ""}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <p className="mb-1 text-sm text-ink-muted">
           <span className="font-medium text-ink">Tema:</span> {plano.tema} · <span className="font-medium text-ink">Subtema:</span>{" "}
           {plano.subtema} · <span className="font-medium text-ink">Horário:</span> {plano.horario}
@@ -171,6 +187,7 @@ export default function TreinoDetalhe() {
       >
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge status={sumula.status} />
+          <TeamBadge team={sumula.team} />
           {sumula.confirmedAt && <span className="text-ink-muted">{formatDateTime(sumula.confirmedAt)}</span>}
           <span className="ml-auto text-ink-muted">Escalação: {sumula.entries.length} atletas</span>
         </div>
