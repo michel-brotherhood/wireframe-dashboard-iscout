@@ -3,6 +3,8 @@ import type { PlanoAula } from "../types";
 import { Card, Field, IntervaloFlow, PrimaryButton, StatusBadge, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
+import { useCurrentUser } from "../state/SessionContext";
+import { escopoContem } from "../data/users";
 import { prazoLabel } from "../data/mockData";
 
 function formatDate(iso: string) {
@@ -24,14 +26,17 @@ function totalPlanejado(p: PlanoAula) {
 
 export default function AprovacaoPlanos() {
   const { planos, approvePlano, requestChanges, bulkApprove: bulkApproveCtx } = usePlanos();
+  const user = useCurrentUser();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  const pendentes = planos.filter((p) => p.status === "submitted" || p.status === "changes_requested");
-  const historico = planos
+  // Só planos dentro do escopo do usuário (unidade/categorias/turmas atendidas).
+  const noEscopo = planos.filter((p) => escopoContem(p, user));
+  const pendentes = noEscopo.filter((p) => p.status === "submitted" || p.status === "changes_requested");
+  const historico = noEscopo
     .filter((p) => p.status === "approved" || p.status === "cancelled" || p.status === "executed")
     .sort((a, b) => (b.reviewedAt ?? b.approvedAt ?? "").localeCompare(a.reviewedAt ?? a.approvedAt ?? ""));
 

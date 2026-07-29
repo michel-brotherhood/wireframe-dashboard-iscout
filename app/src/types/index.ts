@@ -8,9 +8,30 @@ export type Phase = "Organização ofensiva" | "Organização defensiva" | "Prog
 export type Categoria = "Sub-13" | "Sub-15" | "Sub-17" | "Sub-20";
 export type Turma = "Turma A" | "Turma B";
 
-// Perfis de demonstração do wireframe — sem autenticação real, apenas altera
-// o que a UI mostra/permite. Ver RoleContext.
+// Perfis de demonstração do wireframe — o papel (cargo) determina o que a UI
+// mostra/permite. Ver SessionContext.
 export type Role = "treinador" | "head_coach" | "gestor" | "responsavel";
+
+// Escopo de atuação do usuário ("skill" / área que ele atende): a unidade e as
+// categorias/turmas sob sua responsabilidade. É o recorte que filtra o que cada
+// usuário enxerga, além do papel. Login é mock (sem backend).
+export interface Escopo {
+  unidade: string;
+  categorias: Categoria[];
+  turmas: Turma[];
+}
+
+export interface AppUser {
+  id: string;
+  nome: string;
+  email: string;
+  role: Role;
+  /** Rótulo do cargo exibido na UI (ex.: "Head Coach"). */
+  cargo: string;
+  escopo: Escopo;
+  /** Treinador: liga o usuário aos treinos/planos que ele ministra (coachName). */
+  coachName?: string;
+}
 
 // Ciclo de vida real do plano. "Fora do prazo" e "Executado sem plano
 // aprovado" não são estados armazenados — são condições calculadas a partir

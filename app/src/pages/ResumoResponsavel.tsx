@@ -1,6 +1,8 @@
 import { treinos } from "../data/mockData";
 import { Card } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { useCurrentUser } from "../state/SessionContext";
+import { escopoContem } from "../data/users";
 
 // Nome do atleta "acompanhado" nesta demonstração — sem autenticação real,
 // então não há como saber de fato qual responsável está olhando a tela.
@@ -17,7 +19,10 @@ function formatDate(iso: string) {
 }
 
 export default function ResumoResponsavel() {
-  const ultimoTreino = treinos.find((t) => t.status === "Executado") ?? treinos[0];
+  const user = useCurrentUser();
+  // Responsável só acompanha a turma do seu atleta (escopo do usuário).
+  const meusTreinos = treinos.filter((t) => escopoContem(t, user));
+  const ultimoTreino = meusTreinos.find((t) => t.status === "Executado") ?? meusTreinos[0] ?? treinos[0];
   const { plano, sumula } = ultimoTreino;
   const presente = sumula.entries.some((e) => e.nome === MEU_ATLETA);
 
