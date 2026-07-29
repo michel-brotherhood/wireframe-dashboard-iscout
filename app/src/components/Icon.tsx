@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 
 const paths: Record<string, ReactNode> = {
+  bell: (
+    <>
+      <path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 7H4c0-1 2-2 2-7Z" />
+      <path d="M10.5 20a2 2 0 0 0 3 0" />
+    </>
+  ),
   trophy: (
     <>
       <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z" />
