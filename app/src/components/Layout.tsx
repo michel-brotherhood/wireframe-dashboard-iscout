@@ -4,7 +4,7 @@ import logo from "../assets/brand/marca-principal.png";
 import logoCompact from "../assets/brand/marca-compacta.png";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
-import { useRole, ROLE_LABELS } from "../state/RoleContext";
+import { useCurrentUser, useSession } from "../state/SessionContext";
 import type { Role } from "../types";
 
 interface NavItem {
@@ -38,21 +38,43 @@ const referenceNavItem: NavItem = { to: "/arquitetura", label: "Arquitetura", ic
 // referência técnica vive lá, não é replicada dentro do wireframe.
 const ARQUITETURA_MERMAID_URL = "https://mermaid.ai/d/400df741-4a78-42b7-82b3-38667bbb9cf6";
 
-function RoleSelect({ className = "" }: { className?: string }) {
-  const { role, setRole } = useRole();
+function initials(nome: string) {
+  return nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
+
+function UserMenu() {
+  const user = useCurrentUser();
+  const { logout } = useSession();
   return (
-    <select
-      value={role}
-      onChange={(e) => setRole(e.target.value as Role)}
-      aria-label="Perfil de visualização (demonstração, sem autenticação real)"
-      className={`min-h-[44px] rounded-lg border border-line bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-ink [color-scheme:dark] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 ${className}`}
-    >
-      {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
-        <option key={r} value={r}>
-          {ROLE_LABELS[r]}
-        </option>
-      ))}
-    </select>
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 py-1 pl-1 pr-2">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-hover text-xs font-semibold text-white"
+          aria-hidden="true"
+        >
+          {initials(user.nome)}
+        </span>
+        <span className="hidden leading-tight sm:block">
+          <span className="block text-xs font-semibold text-ink">{user.nome}</span>
+          <span className="block text-[11px] text-ink-muted">{user.cargo}</span>
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={logout}
+        aria-label="Sair da conta"
+        className="flex h-11 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-ink-faint hover:text-ink"
+      >
+        <Icon name="arrowLeft" className="h-4 w-4" />
+        <span className="hidden sm:inline">Sair</span>
+      </button>
+    </div>
   );
 }
 
@@ -91,7 +113,7 @@ function BottomTabLink({ to, label, icon }: NavItem) {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { role } = useRole();
+  const { role } = useCurrentUser();
   const items = navItemsForRole(role);
   const showArquitetura = role !== "responsavel";
 
@@ -143,8 +165,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <RoleSelect className="hidden md:block" />
-            <RoleSelect className="md:hidden" />
             {showArquitetura && (
               <a
                 href={ARQUITETURA_MERMAID_URL}
@@ -156,6 +176,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <Icon name={referenceNavItem.icon} className="h-4 w-4" />
               </a>
             )}
+            <UserMenu />
           </div>
         </div>
       </header>

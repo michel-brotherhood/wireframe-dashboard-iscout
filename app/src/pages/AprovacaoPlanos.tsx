@@ -3,6 +3,8 @@ import type { PlanoAula } from "../types";
 import { Card, Field, IntervaloFlow, PrimaryButton, StatusBadge, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
+import { useCurrentUser } from "../state/SessionContext";
+import { escopoContem } from "../data/users";
 import { prazoLabel } from "../data/mockData";
 
 function formatDate(iso: string) {
@@ -24,14 +26,17 @@ function totalPlanejado(p: PlanoAula) {
 
 export default function AprovacaoPlanos() {
   const { planos, approvePlano, requestChanges, bulkApprove: bulkApproveCtx } = usePlanos();
+  const user = useCurrentUser();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  const pendentes = planos.filter((p) => p.status === "submitted" || p.status === "changes_requested");
-  const historico = planos
+  // Só planos dentro do escopo do usuário (unidade/categorias/turmas atendidas).
+  const noEscopo = planos.filter((p) => escopoContem(p, user));
+  const pendentes = noEscopo.filter((p) => p.status === "submitted" || p.status === "changes_requested");
+  const historico = noEscopo
     .filter((p) => p.status === "approved" || p.status === "cancelled" || p.status === "executed")
     .sort((a, b) => (b.reviewedAt ?? b.approvedAt ?? "").localeCompare(a.reviewedAt ?? a.approvedAt ?? ""));
 
@@ -229,38 +234,48 @@ export default function AprovacaoPlanos() {
               const prazo = prazoLabel(p.deadlineAt);
               return (
                 <div key={p.id} className="rounded-xl border border-line-soft bg-surface-2 p-3">
-                  <div className="flex flex-wrap items-start gap-3">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-line bg-surface text-primary focus:ring-primary"
-                      checked={selected.has(p.id)}
-                      onChange={() => toggleSelect(p.id)}
-                      aria-label={`Selecionar plano de ${formatDate(p.sessionDate)}`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-ink">
-                          {formatDate(p.sessionDate)} · {p.categoria} · {p.turma}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 shrink-0 rounded border-line bg-surface text-primary focus:ring-primary"
+                        checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                        aria-label={`Selecionar plano de ${formatDate(p.sessionDate)}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-ink">
+                            {formatDate(p.sessionDate)} · {p.categoria} · {p.turma}
+                          </p>
+                          <StatusBadge status={p.status} />
+                        </div>
+                        <p className="text-sm text-ink-muted [&>span]:whitespace-nowrap">
+                          <span>{p.unidade}</span> · <span>Treinador: {p.coachName}</span> · <span>{p.periodo}</span> ·{" "}
+                          <span>{p.semana}</span> · <span>Total Planejado: {totalPlanejado(p)} min</span>
                         </p>
-                        <StatusBadge status={p.status} />
+                        <p className="mt-1 text-sm">
+                          <span className="text-ink-muted">Prazo: {formatDateTime(p.deadlineAt)} · </span>
+                          <span className={`font-medium ${prazo.tone}`}>{prazo.text}</span>
+                        </p>
+                        {p.status === "changes_requested" && p.reviewComment && (
+                          <p className="mt-1 text-sm text-ink-muted">Motivo anterior: "{p.reviewComment}"</p>
+                        )}
                       </div>
-                      <p className="text-sm text-ink-muted [&>span]:whitespace-nowrap">
-                        <span>{p.unidade}</span> · <span>Treinador: {p.coachName}</span> · <span>{p.periodo}</span> ·{" "}
-                        <span>{p.semana}</span> · <span>Total Planejado: {totalPlanejado(p)} min</span>
-                      </p>
-                      <p className="mt-1 text-sm">
-                        <span className="text-ink-muted">Prazo: {formatDateTime(p.deadlineAt)} · </span>
-                        <span className={`font-medium ${prazo.tone}`}>{prazo.text}</span>
-                      </p>
-                      {p.status === "changes_requested" && p.reviewComment && (
-                        <p className="mt-1 text-sm text-ink-muted">Motivo anterior: "{p.reviewComment}"</p>
-                      )}
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      <PrimaryButton variant="secondary" onClick={() => openDetail(p.id)}>
+                    <div className="flex gap-2 sm:shrink-0">
+                      <PrimaryButton
+                        variant="secondary"
+                        className="flex-1 sm:flex-none"
+                        onClick={() => openDetail(p.id)}
+                      >
                         <Icon name="clipboard" className="h-4 w-4" /> Ver Plano
                       </PrimaryButton>
-                      <PrimaryButton variant="secondary" onClick={() => handleApprove(p.id)}>
+                      <PrimaryButton
+                        variant="secondary"
+                        className="flex-1 sm:flex-none"
+                        onClick={() => handleApprove(p.id)}
+                      >
                         <Icon name="check" className="h-4 w-4" /> Aprovar
                       </PrimaryButton>
                     </div>

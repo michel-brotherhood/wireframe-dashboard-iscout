@@ -5,7 +5,8 @@ import { Card, StatusBadge, PrimaryButton, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
 import type { IconName } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
-import { useRole } from "../state/RoleContext";
+import { useCurrentUser } from "../state/SessionContext";
+import { escopoContem } from "../data/users";
 import ResumoResponsavel from "./ResumoResponsavel";
 import type { PlanoAula, Treino } from "../types";
 
@@ -83,8 +84,14 @@ const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { role } = useRole();
+  const user = useCurrentUser();
+  const { role } = user;
   const { planos } = usePlanos();
+
+  // Recorte por escopo do usuário: cada perfil só enxerga os treinos/planos da
+  // sua área de atuação (unidade + categorias/turmas; treinador só os próprios).
+  const escopedTreinos = useMemo(() => treinos.filter((t) => escopoContem(t, user)), [user]);
+  const escopedPlanos = useMemo(() => planos.filter((p) => escopoContem(p, user)), [planos, user]);
 
   const [dataFilter, setDataFilter] = useState("2026-07-02");
   const [unidadeFilter, setUnidadeFilter] = useState("Todas");
@@ -103,13 +110,13 @@ export default function Dashboard() {
     statusFilter !== "Todos",
   ].filter(Boolean).length;
 
-  const unidades = useMemo(() => Array.from(new Set(treinos.map((t) => t.unidade))), []);
-  const categorias = useMemo(() => Array.from(new Set(treinos.map((t) => t.categoria))), []);
-  const turmas = useMemo(() => Array.from(new Set(treinos.map((t) => t.turma))), []);
-  const treinadores = useMemo(() => Array.from(new Set(treinos.map((t) => t.coachName))), []);
+  const unidades = useMemo(() => Array.from(new Set(escopedTreinos.map((t) => t.unidade))), [escopedTreinos]);
+  const categorias = useMemo(() => Array.from(new Set(escopedTreinos.map((t) => t.categoria))), [escopedTreinos]);
+  const turmas = useMemo(() => Array.from(new Set(escopedTreinos.map((t) => t.turma))), [escopedTreinos]);
+  const treinadores = useMemo(() => Array.from(new Set(escopedTreinos.map((t) => t.coachName))), [escopedTreinos]);
 
   const filteredTreinos = useMemo(() => {
-    return treinos.filter((t) => {
+    return escopedTreinos.filter((t) => {
       if (dataFilter && t.sessionDate > dataFilter) return false;
       if (unidadeFilter !== "Todas" && t.unidade !== unidadeFilter) return false;
       if (categoriaFilter !== "Todas" && t.categoria !== categoriaFilter) return false;
@@ -119,13 +126,13 @@ export default function Dashboard() {
       else if (statusFilter !== "Todos" && statusFilter !== "fora_do_prazo" && t.plano.status !== statusFilter) return false;
       return true;
     });
-  }, [dataFilter, unidadeFilter, categoriaFilter, turmaFilter, treinadorFilter, statusFilter]);
+  }, [escopedTreinos, dataFilter, unidadeFilter, categoriaFilter, turmaFilter, treinadorFilter, statusFilter]);
 
   if (role === "responsavel") {
     return <ResumoResponsavel />;
   }
 
-  const cards = buildCards(role, planos, treinos);
+  const cards = buildCards(role, escopedPlanos, escopedTreinos);
   const roleTitle =
     role === "gestor"
       ? "Visão geral da operação"

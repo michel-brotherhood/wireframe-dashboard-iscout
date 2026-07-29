@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { treinos } from "../data/mockData";
 import { Card, IntervaloFlow, StatusBadge, PrimaryButton } from "../components/ui";
 import { Icon } from "../components/Icon";
-import { useRole } from "../state/RoleContext";
+import { useRole } from "../state/SessionContext";
 
 function formatDateTime(iso?: string) {
   if (!iso) return "-";
