@@ -144,11 +144,10 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading flex items-center gap-2 text-lg font-semibold text-ink sm:text-2xl">
+          <h1 className="font-heading flex items-center gap-2 text-xl font-semibold text-ink sm:text-2xl">
             <Icon name="trophy" className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
-            Dashboard BIG SOCCER by iSCOUT
+            {roleTitle}
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">{roleTitle}</p>
         </div>
         {role === "treinador" && (
           <PrimaryButton onClick={() => navigate("/planos/novo")}>
@@ -274,7 +273,7 @@ export default function Dashboard() {
               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink-muted">Administração</p>
-                  <p className="text-base font-semibold text-ink">Configurações</p>
+                  <p className="text-base font-semibold text-ink">Gestão de Acessos</p>
                 </div>
                 <Icon name="arrowRight" className="h-4 w-4 shrink-0 text-ink-muted" />
               </div>

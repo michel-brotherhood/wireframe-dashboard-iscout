@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import logo from "../assets/brand/marca-principal.png";
 import logoCompact from "../assets/brand/marca-compacta.png";
 import { Icon } from "./Icon";
@@ -29,9 +29,27 @@ function navItemsForRole(role: Role): NavItem[] {
     items.push({ to: "/planos/aprovacao", label: "Aprovações", icon: "stamp" });
   }
   if (role === "gestor") {
-    items.push({ to: "/configuracoes", label: "Configurações", icon: "menu" });
+    // Gestor supervisiona a operação: acompanha a fila de aprovações e
+    // administra acessos.
+    items.push(
+      { to: "/planos/aprovacao", label: "Aprovações", icon: "stamp" },
+      { to: "/configuracoes", label: "Acessos", icon: "menu" },
+    );
   }
   return items;
+}
+
+// Rótulo curto da página atual, exibido ao lado da logo no header.
+function pageTitleForPath(pathname: string, role: Role): string {
+  if (pathname === "/") return role === "responsavel" ? "Resumo" : "Dashboard";
+  if (pathname.startsWith("/planos/aprovacao")) return "Aprovações";
+  if (pathname.startsWith("/planos")) return "Novo Plano";
+  if (pathname.startsWith("/sumulas")) return "Nova Súmula";
+  if (pathname.startsWith("/execution")) return "Registrar Execução";
+  if (pathname.startsWith("/treinos")) return "Detalhe do Treino";
+  if (pathname.startsWith("/configuracoes")) return "Gestão de Acessos";
+  if (pathname.startsWith("/arquitetura")) return "Arquitetura";
+  return "";
 }
 
 const referenceNavItem: NavItem = { to: "/arquitetura", label: "Arquitetura", icon: "network" };
@@ -115,6 +133,8 @@ function BottomTabLink({ to, label, icon }: NavItem) {
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { role } = useCurrentUser();
+  const { pathname } = useLocation();
+  const pageTitle = pageTitleForPath(pathname, role);
   const items = navItemsForRole(role);
   const showArquitetura = role !== "responsavel";
 
@@ -139,10 +159,18 @@ export default function Layout({ children }: { children: ReactNode }) {
       </a>
       <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <NavLink to="/" className="flex items-center gap-2" aria-label="BIG SOCCER by iSCOUT - início">
-            <img src={logo} alt="BIG SOCCER by iSCOUT" className="hidden h-9 w-auto sm:block" />
-            <img src={logoCompact} alt="BIG SOCCER by iSCOUT" className="h-8 w-auto sm:hidden" />
-          </NavLink>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <NavLink to="/" className="flex shrink-0 items-center" aria-label="BIG SOCCER by iSCOUT - início">
+              <img src={logo} alt="BIG SOCCER by iSCOUT" className="hidden h-9 w-auto sm:block" />
+              <img src={logoCompact} alt="BIG SOCCER by iSCOUT" className="h-8 w-auto sm:hidden" />
+            </NavLink>
+            {pageTitle && (
+              <>
+                <span aria-hidden="true" className="h-5 w-px shrink-0 bg-line" />
+                <span className="truncate text-sm font-semibold text-ink">{pageTitle}</span>
+              </>
+            )}
+          </div>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Navegação principal">
             {items.map((item) => (
