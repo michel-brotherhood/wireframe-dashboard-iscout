@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, Field, IntervaloFlow, PrimaryButton, inputClass, inputErrorClass } from "../components/ui";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Card,
+  CheckboxGroup,
+  Field,
+  IntervaloFlow,
+  PrimaryButton,
+  RadioGroup,
+  inputClass,
+  inputErrorClass,
+} from "../components/ui";
 import { Icon } from "../components/Icon";
 import { usePlanos } from "../state/PlanosContext";
 import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
-import type { Categoria, Estacao, Phase, PlanoAula, TeamLabel, TipoEstacao, Turma } from "../types";
+import { MATERIAIS, OBJETIVOS, ORIENTACOES } from "../data/planoOptions";
+import type { Categoria, Estacao, Phase, PlanoAula, PlanStatus, TeamLabel, TipoEstacao, Turma } from "../types";
 
 const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"] as const;
 
@@ -27,13 +37,14 @@ function DiagramUpload() {
   return (
     <div className="mb-4">
       <span className="mb-1 block text-sm font-medium text-ink-muted">Diagrama de Campo</span>
-      <div className="flex flex-wrap gap-2">
-        <PrimaryButton variant="secondary">
+      <div className="flex flex-wrap items-center gap-2">
+        <PrimaryButton variant="secondary" disabled>
           <Icon name="upload" className="h-4 w-4" /> Upload Diagrama
         </PrimaryButton>
-        <PrimaryButton variant="secondary">
+        <PrimaryButton variant="secondary" disabled>
           <Icon name="edit" className="h-4 w-4" /> Desenhar no Editor
         </PrimaryButton>
+        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-ink-muted">Em breve</span>
       </div>
       <div className="mt-2 flex h-32 w-full max-w-xs items-center justify-center rounded-xl border-2 border-dashed border-line bg-surface-2/50 text-xs uppercase tracking-wide text-ink-muted sm:h-40 sm:w-72">
         Imagem do diagrama · 300×300px
@@ -67,64 +78,27 @@ function EstacaoForm({
       <Field label="Descrição">
         <input className={inputClass} value={value.descricao} onChange={(e) => onChange({ descricao: e.target.value })} />
       </Field>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Duração (minutos)" required>
-          <input
-            type="number"
-            min={1}
-            className={inputClass}
-            value={value.duracaoMin}
-            onChange={(e) => onChange({ duracaoMin: Number(e.target.value) })}
-          />
-        </Field>
-        <Field label="Materiais">
-          <input className={inputClass} value={value.materiais} onChange={(e) => onChange({ materiais: e.target.value })} />
-        </Field>
+      <Field label="Duração (minutos)" required>
+        <input
+          type="number"
+          min={1}
+          className={inputClass}
+          value={value.duracaoMin}
+          onChange={(e) => onChange({ duracaoMin: Number(e.target.value) })}
+        />
+      </Field>
+      <Field label="Materiais">
+        <CheckboxGroup
+          options={MATERIAIS}
+          value={value.materiais ? value.materiais.split(",").map((s) => s.trim()).filter(Boolean) : []}
+          onChange={(arr) => onChange({ materiais: arr.join(", ") })}
+          allowOther
+          otherPlaceholder="Outros materiais"
+        />
+      </Field>
+      <div className="mt-4">
+        <DiagramUpload />
       </div>
-      <DiagramUpload />
-    </div>
-  );
-}
-
-function DynamicList({
-  label,
-  addLabel,
-  items,
-  onAdd,
-  onUpdate,
-  onRemove,
-}: {
-  label: string;
-  addLabel: string;
-  items: string[];
-  onAdd: () => void;
-  onUpdate: (idx: number, value: string) => void;
-  onRemove: (idx: number) => void;
-}) {
-  return (
-    <div className="mb-4">
-      <span className="mb-1 block text-sm font-medium text-ink-muted">{label}</span>
-      {items.map((v, i) => (
-        <div key={i} className="mb-2 flex items-center gap-2">
-          <input
-            className={inputClass}
-            value={v}
-            aria-label={`${label} ${i + 1}`}
-            onChange={(e) => onUpdate(i, e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => onRemove(i)}
-            aria-label={`Remover ${label.toLowerCase()} ${i + 1}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary"
-          >
-            <Icon name="x" className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
-      <button type="button" className="flex items-center gap-1 text-sm font-medium text-primary-text" onClick={onAdd}>
-        <Icon name="plus" className="h-3.5 w-3.5" /> {addLabel}
-      </button>
     </div>
   );
 }
@@ -133,7 +107,11 @@ let novoPlanoSeq = 1;
 
 export default function EditorPlano() {
   const navigate = useNavigate();
-  const { addPlano } = usePlanos();
+  const [searchParams] = useSearchParams();
+  const { planos, addPlano, saveDraft, updatePlano } = usePlanos();
+  // Reabertura de rascunho: ?draft=<id> carrega o plano salvo para edição.
+  const editingId = searchParams.get("draft");
+  const draft = editingId ? planos.find((p) => p.id === editingId) : undefined;
   const [tab, setTab] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [statusIsError, setStatusIsError] = useState(false);
@@ -141,50 +119,58 @@ export default function EditorPlano() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [defaultSession] = useState(() => defaultSessionDateTime());
-  const [data, setData] = useState(defaultSession.date);
-  const [horario, setHorario] = useState(defaultSession.time);
-  const [unidade] = useState("Atibaia");
-  const [periodo, setPeriodo] = useState("Tarde");
-  const [semana, setSemana] = useState("Semana 1");
-  const [categoria, setCategoria] = useState<Categoria>("Sub-15");
-  const [turma, setTurma] = useState<Turma>("Turma A");
-  const [coachName, setCoachName] = useState(COACHES[0]);
-  const [team, setTeam] = useState<TeamLabel>("Amarelo");
-  const [fase, setFase] = useState<Phase>(FASES[0]);
-  const [tema, setTema] = useState(FASE_TEMAS[FASES[0]][0].tema);
-  const [subtema, setSubtema] = useState(FASE_TEMAS[FASES[0]][0].subtemas[0]);
+  const [data, setData] = useState(draft?.sessionDate ?? defaultSession.date);
+  const [horario, setHorario] = useState(draft?.horario ?? defaultSession.time);
+  const [unidade] = useState(draft?.unidade ?? "Atibaia");
+  const [periodo, setPeriodo] = useState(draft?.periodo ?? "Tarde");
+  const [semana, setSemana] = useState(draft?.semana ?? "Semana 1");
+  const [categoria, setCategoria] = useState<Categoria>(draft?.categoria ?? "Sub-15");
+  const [turma, setTurma] = useState<Turma>(draft?.turma ?? "Turma A");
+  const [coachName, setCoachName] = useState(draft?.coachName ?? COACHES[0]);
+  const [team, setTeam] = useState<TeamLabel>(draft?.team ?? "Amarelo");
+  const [fase, setFase] = useState<Phase>(draft?.fase ?? FASES[0]);
+  const [tema, setTema] = useState(draft?.tema ?? FASE_TEMAS[FASES[0]][0].tema);
+  const [subtema, setSubtema] = useState(draft?.subtema ?? FASE_TEMAS[FASES[0]][0].subtemas[0]);
 
-  const [inicialObjetivo, setInicialObjetivo] = useState("Refinamento do gesto motor");
-  const [estacao1, setEstacao1] = useState<Estacao>({
-    nome: "Aquecimento Lúdico com Bola",
-    tipo: "Com bola",
-    descricao: "Jogos lúdicos de ativação com bola, foco em coordenação óculo-pedal.",
-    duracaoMin: 5,
-    materiais: "Bolas, coletes",
-  });
-  const [estacao2, setEstacao2] = useState<Estacao>({
-    nome: "Circuito Recreativo Sem Bola",
-    tipo: "Recreativo",
-    descricao: "Circuito de agilidade e coordenação motora sem bola.",
-    duracaoMin: 5,
-    materiais: "Cones, escada de agilidade",
-  });
+  const [inicialObjetivo, setInicialObjetivo] = useState(draft?.etapaInicial.objetivo ?? "Refinamento do gesto motor");
+  const [estacao1, setEstacao1] = useState<Estacao>(
+    draft?.etapaInicial.estacao1 ?? {
+      nome: "Aquecimento Lúdico com Bola",
+      tipo: "Com bola",
+      descricao: "Jogos lúdicos de ativação com bola, foco em coordenação óculo-pedal.",
+      duracaoMin: 5,
+      materiais: "Bolas, Coletes",
+    },
+  );
+  const [estacao2, setEstacao2] = useState<Estacao>(
+    draft?.etapaInicial.estacao2 ?? {
+      nome: "Circuito Recreativo Sem Bola",
+      tipo: "Recreativo",
+      descricao: "Circuito de agilidade e coordenação motora sem bola.",
+      duracaoMin: 5,
+      materiais: "Cones, Escada de agilidade",
+    },
+  );
 
-  const [fundObjetivo, setFundObjetivo] = useState("Função no modelo de jogo");
-  const [fundDuracao, setFundDuracao] = useState(15);
-  const [fundTipo, setFundTipo] = useState("Analítico");
+  const [fundObjetivo, setFundObjetivo] = useState(draft?.etapaFundamentacao.objetivo ?? "Função no modelo de jogo");
+  const [fundDuracao, setFundDuracao] = useState(draft?.etapaFundamentacao.duracaoMin ?? 15);
+  const [fundTipo, setFundTipo] = useState<string>(draft?.etapaFundamentacao.tipo ?? "Analítico");
 
-  const [principalObjetivo, setPrincipalObjetivo] = useState("Função no modelo de jogo");
-  const [principalDuracao, setPrincipalDuracao] = useState(35);
-  const [subTemas, setSubTemas] = useState(["Projeção em Campo", "Criação de Espaços"]);
-  const [orientacoes, setOrientacoes] = useState(["Jogo Posicional", "Respeito aos Setores"]);
-  const [hidratacao, setHidratacao] = useState(5);
-  const [repouso, setRepouso] = useState(2);
-  const [instruir, setInstruir] = useState(3);
-  const [ativar, setAtivar] = useState(2);
+  const [principalObjetivo, setPrincipalObjetivo] = useState(draft?.etapaPrincipal.objetivo ?? "Função no modelo de jogo");
+  const [principalDuracao, setPrincipalDuracao] = useState(draft?.etapaPrincipal.duracaoMin ?? 35);
+  const [subTemas, setSubTemas] = useState<string[]>(
+    draft?.etapaPrincipal.subTemas ?? FASE_TEMAS[FASES[0]][0].subtemas.slice(0, 2),
+  );
+  const [orientacoes, setOrientacoes] = useState<string[]>(
+    draft?.etapaPrincipal.orientacoes ?? ["Jogo Posicional", "Respeito aos Setores"],
+  );
+  const [hidratacao, setHidratacao] = useState(draft?.etapaPrincipal.intervalo.hidratacaoMin ?? 5);
+  const [repouso, setRepouso] = useState(draft?.etapaPrincipal.intervalo.repousoMin ?? 2);
+  const [instruir, setInstruir] = useState(draft?.etapaPrincipal.intervalo.instruirMin ?? 3);
+  const [ativar, setAtivar] = useState(draft?.etapaPrincipal.intervalo.ativarMin ?? 2);
 
   const [observacoes, setObservacoes] = useState(
-    "Treino focado em passe curto e posicionamento\nAtenção especial ao intervalo para hidratação",
+    draft?.observacoes ?? "Treino focado em passe curto e posicionamento\nAtenção especial ao intervalo para hidratação",
   );
 
   const inicialDuracao = estacao1.duracaoMin + estacao2.duracaoMin;
@@ -201,24 +187,15 @@ export default function EditorPlano() {
     const first = FASE_TEMAS[newFase][0];
     setTema(first.tema);
     setSubtema(first.subtemas[0]);
+    // Sub-temas da Aba 3 dependem do tema — limpa para evitar seleção órfã.
+    setSubTemas([]);
   }
 
   function handleTemaChange(newTema: string) {
     setTema(newTema);
     const subtemas = temaOptions.find((t) => t.tema === newTema)?.subtemas ?? [];
     setSubtema(subtemas[0] ?? "");
-  }
-
-  function addItem(list: string[], setList: (v: string[]) => void) {
-    setList([...list, ""]);
-  }
-
-  function updateItem(list: string[], setList: (v: string[]) => void, idx: number, value: string) {
-    setList(list.map((v, i) => (i === idx ? value : v)));
-  }
-
-  function removeItem(list: string[], setList: (v: string[]) => void, idx: number) {
-    setList(list.filter((_, i) => i !== idx));
+    setSubTemas([]);
   }
 
   function clearError(field: string) {
@@ -272,6 +249,47 @@ export default function EditorPlano() {
     setTab(nextTab);
   }
 
+  function buildPlano(status: PlanStatus, id: string): PlanoAula {
+    return {
+      id,
+      sessionDate: data,
+      horario,
+      unidade,
+      periodo,
+      semana,
+      categoria,
+      turma,
+      team,
+      coachName,
+      fase,
+      tema,
+      subtema,
+      status,
+      deadlineAt: calcDeadline(data, horario),
+      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, estacao1, estacao2 },
+      etapaFundamentacao: { objetivo: fundObjetivo, duracaoMin: fundDuracao, tipo: fundTipo as "Analítico" | "Global" | "Situacional" },
+      etapaPrincipal: {
+        objetivo: principalObjetivo,
+        duracaoMin: principalDuracao,
+        subTemas,
+        orientacoes,
+        intervalo: { hidratacaoMin: hidratacao, repousoMin: repouso, instruirMin: instruir, ativarMin: ativar },
+      },
+      observacoes,
+      createdAt: draft?.createdAt ?? new Date().toISOString(),
+    };
+  }
+
+  function handleSaveDraft() {
+    const id = editingId ?? `plan-draft-${crypto.randomUUID()}`;
+    saveDraft(buildPlano("draft", id));
+    setStatusIsError(false);
+    setJustSubmitted(false);
+    setStatus('Rascunho salvo. Reabra depois em "Meus Rascunhos" no dashboard.');
+    // Passa a editar esse rascunho, para que salvamentos seguintes o atualizem.
+    if (!editingId) navigate(`/planos/novo?draft=${id}`, { replace: true });
+  }
+
   function handleSubmit() {
     const allErrors = { ...validateHeader(), ...validateTab(0), ...validateTab(1), ...validateTab(2) };
     if (Object.keys(allErrors).length > 0) {
@@ -294,35 +312,10 @@ export default function EditorPlano() {
       return;
     }
 
-    const novoPlano: PlanoAula = {
-      id: `plan-novo-${novoPlanoSeq++}`,
-      sessionDate: data,
-      horario,
-      unidade,
-      periodo,
-      semana,
-      categoria,
-      turma,
-      team,
-      coachName,
-      fase,
-      tema,
-      subtema,
-      status: "submitted",
-      deadlineAt: calcDeadline(data, horario),
-      etapaInicial: { objetivo: inicialObjetivo, duracaoMin: inicialDuracao, estacao1, estacao2 },
-      etapaFundamentacao: { objetivo: fundObjetivo, duracaoMin: fundDuracao, tipo: fundTipo as "Analítico" | "Global" | "Situacional" },
-      etapaPrincipal: {
-        objetivo: principalObjetivo,
-        duracaoMin: principalDuracao,
-        subTemas,
-        orientacoes,
-        intervalo: { hidratacaoMin: hidratacao, repousoMin: repouso, instruirMin: instruir, ativarMin: ativar },
-      },
-      observacoes,
-      createdAt: new Date().toISOString(),
-    };
-    addPlano(novoPlano);
+    const id = editingId ?? `plan-novo-${novoPlanoSeq++}`;
+    const novoPlano = buildPlano("submitted", id);
+    if (editingId) updatePlano(novoPlano);
+    else addPlano(novoPlano);
 
     setStatusIsError(false);
     setJustSubmitted(true);
@@ -333,7 +326,7 @@ export default function EditorPlano() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-heading text-xl font-semibold text-ink sm:text-2xl">
-          Criar Novo Plano de Aula
+          {editingId ? "Editar Rascunho de Plano" : "Criar Novo Plano de Aula"}
         </h1>
       </div>
 
@@ -501,13 +494,14 @@ export default function EditorPlano() {
       {tab === 0 && (
         <Card title="Aba 1 · Etapa Inicial (Aquecimento)">
           <Field label="Objetivo" required error={errors.inicialObjetivo}>
-            <input
-              className={errors.inicialObjetivo ? inputErrorClass : inputClass}
+            <RadioGroup
+              options={OBJETIVOS}
               value={inicialObjetivo}
-              onChange={(e) => {
-                setInicialObjetivo(e.target.value);
+              onChange={(v) => {
+                setInicialObjetivo(v);
                 clearError("inicialObjetivo");
               }}
+              allowOther
             />
           </Field>
           <p className="mb-4 text-sm text-ink-muted">
@@ -542,13 +536,14 @@ export default function EditorPlano() {
       {tab === 1 && (
         <Card title="Aba 2 · Etapa de Fundamentação">
           <Field label="Objetivo" required error={errors.fundObjetivo}>
-            <input
-              className={errors.fundObjetivo ? inputErrorClass : inputClass}
+            <RadioGroup
+              options={OBJETIVOS}
               value={fundObjetivo}
-              onChange={(e) => {
-                setFundObjetivo(e.target.value);
+              onChange={(v) => {
+                setFundObjetivo(v);
                 clearError("fundObjetivo");
               }}
+              allowOther
             />
           </Field>
           <Field label="Duração (minutos)" required error={errors.fundDuracao}>
@@ -598,13 +593,14 @@ export default function EditorPlano() {
       {tab === 2 && (
         <Card title="Aba 3 · Etapa Principal">
           <Field label="Objetivo" required error={errors.principalObjetivo}>
-            <input
-              className={errors.principalObjetivo ? inputErrorClass : inputClass}
+            <RadioGroup
+              options={OBJETIVOS}
               value={principalObjetivo}
-              onChange={(e) => {
-                setPrincipalObjetivo(e.target.value);
+              onChange={(v) => {
+                setPrincipalObjetivo(v);
                 clearError("principalObjetivo");
               }}
+              allowOther
             />
           </Field>
           <Field label="Duração (minutos)" required error={errors.principalDuracao}>
@@ -620,23 +616,17 @@ export default function EditorPlano() {
             />
           </Field>
 
-          <DynamicList
-            label="Sub-temas (adicione)"
-            addLabel="Adicionar outro"
-            items={subTemas}
-            onAdd={() => addItem(subTemas, setSubTemas)}
-            onUpdate={(i, v) => updateItem(subTemas, setSubTemas, i, v)}
-            onRemove={(i) => removeItem(subTemas, setSubTemas, i)}
-          />
+          <div className="mb-4">
+            <Field label="Sub-temas (marque os que se aplicam)">
+              <CheckboxGroup options={subtemaOptions} value={subTemas} onChange={setSubTemas} allowOther otherPlaceholder="Outro sub-tema" />
+            </Field>
+          </div>
 
-          <DynamicList
-            label="Orientações (adicione)"
-            addLabel="Adicionar outra"
-            items={orientacoes}
-            onAdd={() => addItem(orientacoes, setOrientacoes)}
-            onUpdate={(i, v) => updateItem(orientacoes, setOrientacoes, i, v)}
-            onRemove={(i) => removeItem(orientacoes, setOrientacoes, i)}
-          />
+          <div className="mb-4">
+            <Field label="Orientações (marque as que se aplicam)">
+              <CheckboxGroup options={ORIENTACOES} value={orientacoes} onChange={setOrientacoes} allowOther otherPlaceholder="Outra orientação" />
+            </Field>
+          </div>
 
           <div className="mb-4">
             <span className="mb-2 block text-sm font-medium text-ink-muted">Protocolo de Intervalo</span>
@@ -700,14 +690,7 @@ export default function EditorPlano() {
               <Icon name="arrowLeft" className="h-4 w-4" /> Anterior
             </PrimaryButton>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <PrimaryButton
-                variant="secondary"
-                onClick={() => {
-                  setStatusIsError(false);
-                  setJustSubmitted(false);
-                  setStatus("Plano salvo como rascunho.");
-                }}
-              >
+              <PrimaryButton variant="secondary" onClick={handleSaveDraft}>
                 Salvar como Rascunho
               </PrimaryButton>
               <PrimaryButton onClick={handleSubmit}>Submeter para Aprovação</PrimaryButton>

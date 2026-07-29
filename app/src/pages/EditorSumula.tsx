@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ambiguousMatches } from "../data/mockData";
-import { Card, Field, PrimaryButton, inputClass } from "../components/ui";
+import { Card, Field, PrimaryButton, RadioGroup, inputClass } from "../components/ui";
 import { Icon } from "../components/Icon";
+import { POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
 import type { Categoria } from "../types";
 
 const BLOCKED_JERSEYS = [24, 51, 69];
@@ -45,10 +46,13 @@ const initialRoster: Row[] = [
 
 export default function EditorSumula() {
   const [categoria, setCategoria] = useState<Categoria>("Sub-15");
+  const [sessao, setSessao] = useState("Sessão 1 - Campo 2");
   const [roster, setRoster] = useState<Row[]>(initialRoster);
   const [newJersey, setNewJersey] = useState("");
   const [newNome, setNewNome] = useState("");
   const [newMatricula, setNewMatricula] = useState("");
+  const [newPosicao, setNewPosicao] = useState("Goleiro");
+  const [newPosicaoOutro, setNewPosicaoOutro] = useState("");
   const [newStarter, setNewStarter] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [resolved, setResolved] = useState(false);
@@ -76,10 +80,13 @@ export default function EditorSumula() {
       return;
     }
 
-    setRoster([...roster, { jersey: jerseyNum, nome: newNome.trim(), posicao: "—", matricula: newMatricula.trim(), starter: newStarter }]);
+    const posicao = newPosicao === "Outro" ? newPosicaoOutro.trim() || "—" : newPosicao;
+    setRoster([...roster, { jersey: jerseyNum, nome: newNome.trim(), posicao, matricula: newMatricula.trim(), starter: newStarter }]);
     setNewJersey("");
     setNewNome("");
     setNewMatricula("");
+    setNewPosicao("Goleiro");
+    setNewPosicaoOutro("");
     setNewStarter(true);
   }
 
@@ -108,7 +115,7 @@ export default function EditorSumula() {
       </h1>
 
       <Card>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Data" required>
             <input type="date" className={inputClass} defaultValue="2026-07-02" />
           </Field>
@@ -125,14 +132,16 @@ export default function EditorSumula() {
               <option>Azul</option>
             </select>
           </Field>
+        </div>
+        <div className="mt-3">
           <Field label="Sessão / Take" required>
-            <input className={inputClass} defaultValue="Sessão 1 - Campo 2" />
+            <RadioGroup options={SESSAO_OPCOES} value={sessao} onChange={setSessao} allowOther />
           </Field>
         </div>
       </Card>
 
       <Card title="Adicionar Atleta">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[140px_1fr_140px_120px_auto] sm:items-end">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[104px_1fr_130px_150px_92px_auto] lg:items-end">
           <Field label="Número do Colete">
             <input
               type="number"
@@ -146,10 +155,18 @@ export default function EditorSumula() {
           <Field label="Nome">
             <input className={inputClass} value={newNome} onChange={(e) => setNewNome(e.target.value)} />
           </Field>
-          <Field label="Matrícula" hint="Sem matrícula, o nome precisa passar por Resolver Nomes.">
+          <Field label="Matrícula" hint="Sem matrícula, passa por Resolver Nomes.">
             <input className={inputClass} value={newMatricula} onChange={(e) => setNewMatricula(e.target.value)} />
           </Field>
-          <label className="mb-4 flex items-center gap-2 text-sm text-ink sm:mb-[13px]">
+          <Field label="Posição">
+            <select className={inputClass} value={newPosicao} onChange={(e) => setNewPosicao(e.target.value)}>
+              {POSICOES.map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+              <option>Outro</option>
+            </select>
+          </Field>
+          <label className="mb-4 flex items-center gap-2 text-sm text-ink lg:mb-[13px]">
             <input
               type="checkbox"
               className="h-4 w-4 rounded border-line bg-surface-2 text-primary focus:ring-primary"
@@ -158,10 +175,22 @@ export default function EditorSumula() {
             />
             Titular
           </label>
-          <PrimaryButton onClick={handleAdd} className="mb-4 sm:mb-4">
+          <PrimaryButton onClick={handleAdd} className="mb-4 lg:mb-4">
             <Icon name="plus" className="h-4 w-4" /> Adicionar
           </PrimaryButton>
         </div>
+        {newPosicao === "Outro" && (
+          <div className="mb-1 sm:max-w-xs">
+            <Field label="Posição (outro)">
+              <input
+                className={inputClass}
+                placeholder="Digite a posição"
+                value={newPosicaoOutro}
+                onChange={(e) => setNewPosicaoOutro(e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
         {error && (
           <p role="alert" className="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary-text">
             <Icon name="alert" className="h-4 w-4" /> {error}

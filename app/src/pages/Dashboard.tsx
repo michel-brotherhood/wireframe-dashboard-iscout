@@ -41,6 +41,7 @@ function buildCards(role: string, planos: PlanoAula[], treinosList: Treino[]): M
   if (role === "treinador") {
     return [
       { icon: "calendar", label: "Próximas Aulas", value: proximas },
+      { icon: "stamp", label: "Aguardando Aprovação", value: aguardando, sub: "Submetidos ao Head Coach" },
       { icon: "clipboard", label: "Planos em Rascunho", value: planos.filter((p) => p.status === "draft").length },
       { icon: "alert", label: "Planos Devolvidos", value: ajustes, sub: "Ajustes solicitados", tone: "warning" },
       { icon: "check", label: "Planos Aprovados", value: planos.filter((p) => p.status === "approved").length },
@@ -133,6 +134,7 @@ export default function Dashboard() {
   }
 
   const cards = buildCards(role, escopedPlanos, escopedTreinos);
+  const rascunhos = escopedPlanos.filter((p) => p.status === "draft");
   const roleTitle =
     role === "gestor"
       ? "Visão geral da operação"
@@ -281,6 +283,37 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      {role === "treinador" && rascunhos.length > 0 && (
+        <Card title={`Meus Rascunhos (${rascunhos.length})`} icon={<Icon name="clipboard" className="h-4 w-4" />}>
+          <ul className="flex flex-col gap-2">
+            {rascunhos.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/planos/novo?draft=${p.id}`)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-line-soft bg-surface-2 p-3 text-left transition-colors hover:border-primary/40"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                    <Icon name="edit" className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-ink">
+                      {formatDate(p.sessionDate)} · {p.categoria} · {p.turma}
+                    </span>
+                    <span className="block truncate text-xs text-ink-muted">
+                      {p.tema} · {p.subtema}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-text">
+                    Continuar <Icon name="arrowRight" className="h-3.5 w-3.5" />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card title="Indicadores Pedagógicos" icon={<Icon name="alert" className="h-4 w-4 text-warning" />}>
         <p className="text-sm text-ink-muted">

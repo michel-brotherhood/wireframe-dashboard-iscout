@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { PlanoAula } from "../types";
 import { planosPendentesIniciais, planosDisponiveisParaExecucao } from "../data/mockData";
 
@@ -7,9 +7,26 @@ const seedPlanos: PlanoAula[] = [...planosPendentesIniciais, ...planosDisponivei
 // Nome do Head Coach "logado" nesta demonstração (sem autenticação real).
 const REVIEWER_NAME = "Carla Mendes (Head Coach)";
 
+// Rascunhos criados pelo usuário persistem no navegador (protótipo, sem
+// backend) para poderem ser reabertos e editados depois. Os planos-semente da
+// demonstração continuam sempre "frescos" a cada carga.
+const DRAFTS_KEY = "iscout.planoDrafts";
+
+function readDrafts(): PlanoAula[] {
+  try {
+    const raw = localStorage.getItem(DRAFTS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? (arr as PlanoAula[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 interface PlanosContextValue {
   planos: PlanoAula[];
   addPlano: (plano: PlanoAula) => void;
+  saveDraft: (plano: PlanoAula) => void;
+  updatePlano: (plano: PlanoAula) => void;
   approvePlano: (id: string, comment?: string) => void;
   requestChanges: (id: string, comment: string) => void;
   bulkApprove: (ids: string[]) => void;
@@ -19,10 +36,34 @@ interface PlanosContextValue {
 const PlanosContext = createContext<PlanosContextValue | null>(null);
 
 export function PlanosProvider({ children }: { children: ReactNode }) {
-  const [planos, setPlanos] = useState<PlanoAula[]>(seedPlanos);
+  const [planos, setPlanos] = useState<PlanoAula[]>(() => [...readDrafts(), ...seedPlanos]);
+
+  // Persiste apenas os rascunhos do usuário (status "draft").
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify(planos.filter((p) => p.status === "draft")));
+    } catch {
+      // ambiente sem localStorage — segue só em memória
+    }
+  }, [planos]);
+
+  // Insere ou substitui um plano por id (upsert).
+  function upsert(plano: PlanoAula) {
+    setPlanos((prev) =>
+      prev.some((p) => p.id === plano.id) ? prev.map((p) => (p.id === plano.id ? plano : p)) : [plano, ...prev],
+    );
+  }
 
   function addPlano(plano: PlanoAula) {
     setPlanos((prev) => [plano, ...prev]);
+  }
+
+  function saveDraft(plano: PlanoAula) {
+    upsert({ ...plano, status: "draft" });
+  }
+
+  function updatePlano(plano: PlanoAula) {
+    upsert(plano);
   }
 
   function approvePlano(id: string, comment?: string) {
@@ -82,7 +123,9 @@ export function PlanosProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <PlanosContext.Provider value={{ planos, addPlano, approvePlano, requestChanges, bulkApprove, markExecuted }}>
+    <PlanosContext.Provider
+      value={{ planos, addPlano, saveDraft, updatePlano, approvePlano, requestChanges, bulkApprove, markExecuted }}
+    >
       {children}
     </PlanosContext.Provider>
   );
