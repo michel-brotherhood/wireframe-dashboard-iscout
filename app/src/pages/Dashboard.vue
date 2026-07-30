@@ -2,11 +2,12 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { treinos, isPastDeadline, todayDateString } from "../data/mockData";
-import { Card, StatusBadge, PrimaryButton, inputClass } from "../components/ui";
+import { Card, StatusBadge, PrimaryButton, ProgressBar, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { planosStore } from "../stores/planos";
 import { session } from "../stores/session";
 import { escopoContem } from "../data/users";
+import { resumoReforco } from "../data/fundamentos";
 import ResumoResponsavel from "./ResumoResponsavel.vue";
 
 const TODAY = todayDateString();
@@ -82,6 +83,7 @@ const role = computed(() => session.user.role);
 
 // Recorte por escopo do usuário: cada perfil só enxerga os treinos/planos da
 // sua área de atuação (unidade + categorias/turmas; treinador só os próprios).
+const reforco = computed(() => resumoReforco(session.user));
 const escopedTreinos = computed(() => treinos.filter((t) => escopoContem(t, session.user)));
 const escopedPlanos = computed(() => planosStore.planos.filter((p) => escopoContem(p, session.user)));
 
@@ -307,11 +309,29 @@ function onTreinoKey(e, id) {
       </ul>
     </Card>
 
-    <Card title="Indicadores Pedagógicos">
-      <template #icon><Icon name="alert" class="h-4 w-4 text-warning" /></template>
-      <p class="text-sm text-ink-muted">
-        Indicadores pedagógicos e metodologia de conformidade pendentes de validação.
-      </p>
+    <Card title="Indicadores de Fundamentos (IA)">
+      <template #icon><Icon name="bot" class="h-4 w-4 text-primary" /></template>
+      <template #headerAction>
+        <PrimaryButton variant="secondary" @click="navigate('/reforco')">
+          Ver reforço <Icon name="arrowRight" class="h-3.5 w-3.5" />
+        </PrimaryButton>
+      </template>
+      <template v-if="reforco.sinalizados > 0">
+        <p class="mb-3 text-sm text-ink-muted">
+          <span class="font-semibold text-ink">{{ reforco.sinalizados }}</span> de {{ reforco.totalAvaliados }}
+          atletas com deficiência em ao menos um fundamento. Prioridades de reforço:
+        </p>
+        <ul class="flex flex-col gap-2">
+          <li v-for="f in reforco.topFundamentos.slice(0, 3)" :key="f.fundamento" class="flex items-center gap-3">
+            <span class="w-28 shrink-0 text-sm text-ink">{{ f.fundamento }}</span>
+            <div class="min-w-0 flex-1"><ProgressBar :value="f.media" size="sm" /></div>
+            <span class="w-20 shrink-0 text-right text-xs text-ink-muted">
+              {{ f.qtd }} atleta{{ f.qtd > 1 ? "s" : "" }}
+            </span>
+          </li>
+        </ul>
+      </template>
+      <p v-else class="text-sm text-ink-muted">Nenhuma deficiência de fundamento sinalizada no seu escopo.</p>
     </Card>
 
     <Card title="Últimos Treinos" class="p-0 sm:p-0">
