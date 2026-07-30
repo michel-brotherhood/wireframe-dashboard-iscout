@@ -29,6 +29,10 @@ function navItemsForRole(role) {
       { to: "/configuracoes", label: "Acessos", icon: "menu" },
     );
   }
+  // Recomendações de reforço (IA) — para quem planeja/supervisiona treinos.
+  if (role === "treinador" || role === "head_coach" || role === "gestor") {
+    items.push({ to: "/reforco", label: "Reforço", icon: "bot" });
+  }
   return items;
 }
 
@@ -41,6 +45,7 @@ function pageTitleForPath(pathname, role) {
   if (pathname.startsWith("/execution")) return "Registrar Execução";
   if (pathname.startsWith("/treinos")) return "Detalhe do Treino";
   if (pathname.startsWith("/configuracoes")) return "Gestão de Acessos";
+  if (pathname.startsWith("/reforco")) return "Recomendações de Reforço";
   if (pathname.startsWith("/arquitetura")) return "Arquitetura";
   return "";
 }

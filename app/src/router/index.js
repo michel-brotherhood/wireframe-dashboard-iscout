@@ -9,6 +9,7 @@ import EditorSumula from "../pages/EditorSumula.vue";
 import EditorExecutionLog from "../pages/EditorExecutionLog.vue";
 import Arquitetura from "../pages/Arquitetura.vue";
 import Configuracoes from "../pages/Configuracoes.vue";
+import Reforco from "../pages/Reforco.vue";
 
 // Guarda de rota por papel: sem o papel exigido, redireciona ao Dashboard.
 // Complementa o filtro de menu (navItemsForRole) — impede acesso direto por URL
@@ -20,6 +21,7 @@ const routes = [
   { path: "/planos/aprovacao", component: AprovacaoPlanos, meta: { roles: ["head_coach", "gestor"] } },
   { path: "/sumulas/novo", component: EditorSumula, meta: { roles: ["treinador"] } },
   { path: "/execution/novo", component: EditorExecutionLog, meta: { roles: ["treinador"] } },
+  { path: "/reforco", component: Reforco, meta: { roles: ["treinador", "head_coach", "gestor"] } },
   { path: "/arquitetura", component: Arquitetura },
   { path: "/configuracoes", component: Configuracoes, meta: { roles: ["gestor"] } },
   { path: "/:pathMatch(.*)*", redirect: "/" },
