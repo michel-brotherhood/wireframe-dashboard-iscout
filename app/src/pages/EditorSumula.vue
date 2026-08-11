@@ -21,7 +21,7 @@ function resolutionStatus(row, selections) {
 }
 
 const initialRoster = [
-  { jersey: 1, nome: "João Silva", posicao: "Goleiro", matricula: "1001", starter: true },
+  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", matricula: "1001", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true },
   { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", matricula: "1003", starter: true },
   { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", matricula: "1004", starter: true },

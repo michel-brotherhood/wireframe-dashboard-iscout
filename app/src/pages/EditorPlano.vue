@@ -382,8 +382,9 @@ function onPrincipalDuracaoInput(e) {
       </div>
 
       <div class="mt-1 flex items-center gap-2 text-xs text-ink-muted">
-        <span>Cor do colete (uso na súmula):</span>
+        <label for="plano-cor-colete">Cor do colete (uso na súmula):</label>
         <select
+          id="plano-cor-colete"
           class="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-ink [color-scheme:dark]"
           v-model="team"
         >

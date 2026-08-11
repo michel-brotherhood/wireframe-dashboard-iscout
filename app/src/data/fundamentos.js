@@ -20,7 +20,7 @@ function atleta(id, nome, matricula, categoria, turma, coachName, posicao, notas
 // e coachName para o filtro por perfil (escopoContem) funcionar igual ao resto.
 export const atletas = [
   // Sub-15 · Turma A · João Silva (mesma escalação da súmula)
-  atleta("a-1001", "João Silva", "1001", "Sub-15", "Turma A", "João Silva", "Goleiro", { Cabeceio: 48, Passe: 71, "Lançamento": 82, "Domínio": 66, "Finalização": 40, "Marcação": 74 }),
+  atleta("a-1001", "Rodrigo Almeida", "1001", "Sub-15", "Turma A", "João Silva", "Goleiro", { Cabeceio: 48, Passe: 71, "Lançamento": 82, "Domínio": 66, "Finalização": 40, "Marcação": 74 }),
   atleta("a-1002", "Maria Santos", "1002", "Sub-15", "Turma A", "João Silva", "Lateral", { Cabeceio: 58, Passe: 54, "Lançamento": 63, "Domínio": 70, "Finalização": 52, "Marcação": 68 }),
   atleta("a-1003", "Pedro Costa", "1003", "Sub-15", "Turma A", "João Silva", "Zagueiro", { Cabeceio: 78, Passe: 55, "Lançamento": 49, "Domínio": 62, "Finalização": 44, "Marcação": 81 }),
   atleta("a-1004", "Ana Silva", "1004", "Sub-15", "Turma A", "João Silva", "Zagueira", { Cabeceio: 72, Passe: 57, "Lançamento": 51, "Domínio": 64, "Finalização": 46, "Marcação": 76 }),

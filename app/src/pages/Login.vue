@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import logo from "../assets/brand/marca-principal.png";
 import { USERS, escopoLabel } from "../data/users";
 import { login } from "../stores/session";
@@ -17,6 +18,19 @@ function initials(nome) {
 
 const selectedId = ref(USERS[0].id);
 const selected = computed(() => USERS.find((u) => u.id === selectedId.value));
+
+const router = useRouter();
+
+// A rota do vue-router não muda ao logar (só a sessão) — sem isto, o
+// router-view continuaria na última rota da sessão anterior (ex.: outro
+// usuário tinha deixado "/execution/novo" aberto) sem passar pela guarda de
+// papel de novo, já que nenhuma navegação nova dispara o beforeEach. Navegar
+// para "/" antes de autenticar garante que o usuário sempre entra pela home
+// do próprio papel, validada pela guarda.
+async function handleLogin() {
+  await router.push("/");
+  login(selected.value);
+}
 </script>
 
 <template>
@@ -78,7 +92,7 @@ const selected = computed(() => USERS.find((u) => u.id === selectedId.value));
 
         <button
           type="button"
-          @click="login(selected)"
+          @click="handleLogin"
           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-hover px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-active focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:ring-primary"
         >
           Entrar como {{ selected.nome.split(" ")[0] }}
