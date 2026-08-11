@@ -17,13 +17,13 @@ import Reforco from "../pages/Reforco.vue";
 const routes = [
   { path: "/", component: Dashboard },
   { path: "/treinos/:id", component: TreinoDetalhe },
-  { path: "/planos/novo", component: EditorPlano, meta: { roles: ["treinador"] } },
-  { path: "/planos/aprovacao", component: AprovacaoPlanos, meta: { roles: ["head_coach", "gestor"] } },
-  { path: "/sumulas/novo", component: EditorSumula, meta: { roles: ["treinador"] } },
-  { path: "/execution/novo", component: EditorExecutionLog, meta: { roles: ["treinador"] } },
-  { path: "/reforco", component: Reforco, meta: { roles: ["treinador", "head_coach", "gestor"] } },
+  { path: "/planos/novo", component: EditorPlano, meta: { roles: ["coach", "admin"] } },
+  { path: "/planos/aprovacao", component: AprovacaoPlanos, meta: { roles: ["admin"] } },
+  { path: "/sumulas/novo", component: EditorSumula, meta: { roles: ["coach", "admin"] } },
+  { path: "/execution/novo", component: EditorExecutionLog, meta: { roles: ["coach", "admin"] } },
+  { path: "/reforco", component: Reforco, meta: { roles: ["coach", "admin"] } },
   { path: "/arquitetura", component: Arquitetura },
-  { path: "/configuracoes", component: Configuracoes, meta: { roles: ["gestor"] } },
+  { path: "/configuracoes", component: Configuracoes, meta: { roles: ["admin"] } },
   { path: "/:pathMatch(.*)*", redirect: "/" },
 ];
 

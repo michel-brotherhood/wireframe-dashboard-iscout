@@ -7,30 +7,26 @@ import Icon from "./Icon.vue";
 import NotificationBell from "./NotificationBell.vue";
 import { session, logout } from "../stores/session";
 
-// Cada perfil vê ações diferentes — treinador cria, head coach revisa,
-// gestor administra, responsável só acompanha. Ver seção 3 do briefing.
+// Cada perfil vê ações diferentes — coach cria planos/súmulas/execuções,
+// admin aprova planos e administra acessos, responsável só acompanha.
 function navItemsForRole(role) {
   const items = [{ to: "/", label: role === "responsavel" ? "Resumo" : "Dashboard", icon: "lineChart" }];
-  if (role === "treinador") {
+  if (role !== "responsavel") {
     items.push(
       { to: "/planos/novo", label: "Novo Plano", icon: "clipboard" },
       { to: "/sumulas/novo", label: "Nova Súmula", icon: "ball" },
       { to: "/execution/novo", label: "Registrar Execução", icon: "barChart" },
     );
   }
-  if (role === "head_coach") {
-    items.push({ to: "/planos/aprovacao", label: "Aprovações", icon: "stamp" });
-  }
-  if (role === "gestor") {
-    // Gestor supervisiona a operação: acompanha a fila de aprovações e
-    // administra acessos.
+  if (role === "admin") {
+    // Admin aprova planos submetidos pelos coaches e administra os acessos.
     items.push(
       { to: "/planos/aprovacao", label: "Aprovações", icon: "stamp" },
       { to: "/configuracoes", label: "Acessos", icon: "menu" },
     );
   }
   // Recomendações de reforço (IA) — para quem planeja/supervisiona treinos.
-  if (role === "treinador" || role === "head_coach" || role === "gestor") {
+  if (role !== "responsavel") {
     items.push({ to: "/reforco", label: "Reforço", icon: "bot" });
   }
   return items;
@@ -82,11 +78,10 @@ const pageTitle = computed(() => pageTitleForPath(route.path, role.value));
 const items = computed(() => navItemsForRole(role.value));
 const showArquitetura = computed(() => role.value !== "responsavel");
 
-// Só o treinador tem uma ação de criação primária (Novo Plano) — outros
-// perfis não ganham um FAB, só uma barra de abas simples.
-const fabItem = computed(() =>
-  role.value === "treinador" ? items.value.find((i) => i.to === "/planos/novo") : undefined,
-);
+// Quem pode criar planos (coach/admin) ganha o "Novo Plano" como ação
+// primária (FAB); responsável não tem esse item, então find() já resolve
+// undefined para ele sem precisar checar o papel aqui.
+const fabItem = computed(() => items.value.find((i) => i.to === "/planos/novo"));
 const bottomTabs = computed(() => items.value.filter((i) => i !== fabItem.value));
 const bottomTabsLeft = computed(() =>
   fabItem.value ? bottomTabs.value.slice(0, Math.ceil(bottomTabs.value.length / 2)) : bottomTabs.value,

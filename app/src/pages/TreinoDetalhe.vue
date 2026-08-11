@@ -47,7 +47,7 @@ const sessionDateShort = computed(() => plano.value.sessionDate.split("-").rever
 
 // BR-02: o callout de "ajustes solicitados" citava a etapa em texto livre sem
 // marcar o campo alvo — heurística simples de palavra-chave para destacar
-// visualmente a etapa citada pelo Head Coach, em vez de só descrevê-la.
+// visualmente a etapa citada pelo Admin, em vez de só descrevê-la.
 const ajusteAlvo = computed(() => {
   if (plano.value.status !== "changes_requested" || !plano.value.reviewComment) return null;
   const texto = plano.value.reviewComment.toLowerCase();
@@ -148,7 +148,7 @@ async function handleShare() {
       >
         <Icon name="alert" class="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div class="min-w-0 text-sm">
-          <p class="font-semibold text-warning">Ajustes solicitados pelo Head Coach</p>
+          <p class="font-semibold text-warning">Ajustes solicitados pelo Admin</p>
           <p class="mt-0.5 text-ink">{{ plano.reviewComment }}</p>
           <p v-if="plano.reviewedBy" class="mt-1 text-xs text-ink-muted">
             {{ plano.reviewedBy }}{{ plano.reviewedAt ? ` · ${formatDateTime(plano.reviewedAt)}` : "" }}

@@ -49,18 +49,30 @@ public/
 
 ## Modelo de usuários, papéis e escopo
 
-Login é mock: escolher um usuário na tela de login define `role` + `escopo`
-da sessão (sem senha real). Definidos em `src/data/users.js`.
+Login é mock: escolher um usuário e informar a senha de demonstração define
+`role` + `escopo` da sessão. Usuários-semente em `src/data/users.js`; a lista
+completa (semente + usuários adicionados pela tela de acesso) vive em
+`src/stores/users.js` (`usersStore`), persistida em `localStorage` — sem
+backend real, senha simulada no navegador.
 
-- **Papéis (`role`)**: `treinador` | `head_coach` | `gestor` | `responsavel`
+- **Papéis (`role`)**: `coach` (cria planos, súmulas e execuções) |
+  `admin` (aprova planos submetidos pelos coaches e administra os acessos —
+  Gestão de Acessos) | `responsavel` (só acompanha a turma do próprio atleta)
 - **Escopo**: `{ unidade, categorias[], turmas[] }`, mais `coachName` para
-  treinador (só enxerga o que ele mesmo ministra)
-- **Filtro único de visibilidade**: `escopoContem(item, user)` — usado em
-  toda tela/lista que precisa respeitar o que cada perfil pode ver
+  quem tem turma própria — independe do papel: um `admin` pode manter
+  `coachName` (ex.: segue aparecendo como "Treinador Responsável" ao criar
+  planos para a própria turma, além de aprovar/administrar)
+- **Filtro único de visibilidade**: `escopoContem(item, user)` (`data/users.js`)
+  — usado em toda tela/lista que precisa respeitar o que cada perfil pode ver;
+  `admin` sempre vê tudo
 - **Guarda de rota**: cada rota tem `meta.roles`; `router.beforeEach`
   redireciona para `/` se o papel da sessão não está na lista — acesso
   direto por URL não contorna a regra, só esconder item de menu não seria
-  suficiente
+  suficiente. O login também força a rota para `/` antes de autenticar, para
+  a guarda reavaliar a rota da sessão anterior ao trocar de usuário
+- **Gestão de Acessos** (`pages/Configuracoes.vue`, só `admin`): lista os
+  usuários, permite ativar/desativar login e adicionar novos usuários
+  (nome, papel, escopo, senha) — tudo via `usersStore`
 
 ## IA de recomendação de reforço — base de dados estruturada
 
@@ -92,7 +104,7 @@ resumoReforco(user)    // agregado para o Dashboard:
 ```
 
 Consumido por:
-- **`pages/Reforco.vue`** (rota `/reforco`, papéis `treinador`/`head_coach`/`gestor`) —
+- **`pages/Reforco.vue`** (rota `/reforco`, papéis `coach`/`admin`) —
   um card por fundamento deficiente, lista de atletas afetados e ação mock
   "Sugerir sessão de reforço"
 - **`pages/Dashboard.vue`** — card-resumo "Indicadores de Fundamentos (IA)"

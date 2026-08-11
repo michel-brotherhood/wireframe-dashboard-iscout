@@ -6,15 +6,15 @@ function contexto(p) {
 }
 
 // Notificações derivadas do estado atual (mock, sem backend), respeitando o
-// escopo do usuário. Modela o "Gestor recebe notificação" do briefing
-// (Diagrama 5): submeter um plano gera alerta para quem aprova; devolução e
-// aprovação geram alerta para o treinador.
+// escopo do usuário. Modela o "Admin recebe notificação" do briefing
+// (Diagrama 5): submeter um plano gera alerta para quem aprova (admin);
+// devolução e aprovação geram alerta para o coach.
 export function buildNotifications(user, planos, treinos) {
   const meusPlanos = planos.filter((p) => escopoContem(p, user));
   const meusTreinos = treinos.filter((t) => escopoContem(t, user));
   const out = [];
 
-  if (user.role === "head_coach" || user.role === "gestor") {
+  if (user.role === "admin") {
     meusPlanos
       .filter((p) => p.status === "submitted")
       .forEach((p) =>
@@ -53,7 +53,10 @@ export function buildNotifications(user, planos, treinos) {
       );
   }
 
-  if (user.role === "treinador") {
+  // "Seu plano" só faz sentido pra quem tem turma própria (coachName) — coach
+  // de escopo amplo sem coachName (ex.: ex-head coach/gestor) veria planos
+  // alheios rotulados como "seu" se este filtro não existisse.
+  if (user.role === "coach" && user.coachName) {
     meusPlanos
       .filter((p) => p.status === "changes_requested")
       .forEach((p) =>
