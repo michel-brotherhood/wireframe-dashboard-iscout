@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import logo from "../assets/brand/marca-principal.png";
 import logoCompact from "../assets/brand/marca-compacta.png";
 import Icon from "./Icon.vue";
@@ -66,6 +66,16 @@ function initials(nome) {
 }
 
 const route = useRoute();
+const router = useRouter();
+
+// Reseta a rota ao sair — evita que a próxima sessão (outro usuário logando)
+// reabra a página que este usuário estava vendo antes da guarda de papel
+// reavaliar (ver handleLogin em Login.vue).
+function handleLogout() {
+  logout();
+  router.push("/");
+}
+
 const user = computed(() => session.user);
 const role = computed(() => session.user.role);
 const pageTitle = computed(() => pageTitleForPath(route.path, role.value));
@@ -175,7 +185,7 @@ const hasBottomNav = computed(
             </div>
             <button
               type="button"
-              @click="logout"
+              @click="handleLogout"
               aria-label="Sair da conta"
               class="flex h-11 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-ink-faint hover:text-ink"
             >

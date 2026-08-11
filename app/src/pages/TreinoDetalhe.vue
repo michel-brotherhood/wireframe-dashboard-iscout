@@ -45,6 +45,25 @@ const totalPlanejado = computed(
 
 const sessionDateShort = computed(() => plano.value.sessionDate.split("-").reverse().slice(0, 2).join("/"));
 
+// BR-02: o callout de "ajustes solicitados" citava a etapa em texto livre sem
+// marcar o campo alvo — heurística simples de palavra-chave para destacar
+// visualmente a etapa citada pelo Head Coach, em vez de só descrevê-la.
+const ajusteAlvo = computed(() => {
+  if (plano.value.status !== "changes_requested" || !plano.value.reviewComment) return null;
+  const texto = plano.value.reviewComment.toLowerCase();
+  if (texto.includes("etapa principal")) return "principal";
+  if (texto.includes("fundamenta")) return "fundamentacao";
+  if (texto.includes("etapa inicial") || texto.includes("aquecimento") || texto.includes("estação"))
+    return "inicial";
+  return null;
+});
+
+function etapaCardClass(key) {
+  return ajusteAlvo.value === key
+    ? "rounded-xl border-2 border-warning bg-warning/10 p-3"
+    : "rounded-xl border border-line-soft bg-surface-2 p-3";
+}
+
 const execRows = computed(() => {
   if (!executionLog.value) return [];
   return [
@@ -147,9 +166,10 @@ async function handleShare() {
       </p>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
-          <p class="text-sm font-semibold text-ink">
+        <div :class="etapaCardClass('inicial')">
+          <p class="flex items-center gap-1.5 text-sm font-semibold text-ink">
             Etapa Inicial (Aquecimento) — {{ plano.etapaInicial.duracaoMin }} min
+            <Icon v-if="ajusteAlvo === 'inicial'" name="alert" class="h-3.5 w-3.5 shrink-0 text-warning" aria-label="Ajuste solicitado nesta etapa" />
           </p>
           <p class="mt-1 text-sm text-ink-muted">Objetivo: {{ plano.etapaInicial.objetivo }}</p>
           <p class="mt-2 text-sm font-medium text-ink">Estação 1 — {{ plano.etapaInicial.estacao1.nome }}</p>
@@ -163,16 +183,18 @@ async function handleShare() {
           </p>
           <p class="text-sm text-ink-muted">Materiais: {{ plano.etapaInicial.estacao2.materiais }}</p>
         </div>
-        <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
-          <p class="text-sm font-semibold text-ink">
+        <div :class="etapaCardClass('fundamentacao')">
+          <p class="flex items-center gap-1.5 text-sm font-semibold text-ink">
             Etapa de Fundamentação — {{ plano.etapaFundamentacao.duracaoMin }} min
+            <Icon v-if="ajusteAlvo === 'fundamentacao'" name="alert" class="h-3.5 w-3.5 shrink-0 text-warning" aria-label="Ajuste solicitado nesta etapa" />
           </p>
           <p class="mt-1 text-sm text-ink-muted">Objetivo: {{ plano.etapaFundamentacao.objetivo }}</p>
           <p class="text-sm text-ink-muted">Tipo: {{ plano.etapaFundamentacao.tipo }}</p>
         </div>
-        <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
-          <p class="text-sm font-semibold text-ink">
+        <div :class="etapaCardClass('principal')">
+          <p class="flex items-center gap-1.5 text-sm font-semibold text-ink">
             Etapa Principal — {{ plano.etapaPrincipal.duracaoMin }} min
+            <Icon v-if="ajusteAlvo === 'principal'" name="alert" class="h-3.5 w-3.5 shrink-0 text-warning" aria-label="Ajuste solicitado nesta etapa" />
           </p>
           <p class="mt-1 text-sm text-ink-muted">Objetivo: {{ plano.etapaPrincipal.objetivo }}</p>
           <p class="text-sm text-ink-muted">Sub-temas: {{ plano.etapaPrincipal.subTemas.join(", ") }}</p>

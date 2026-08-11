@@ -77,7 +77,7 @@ export const FASE_TEMAS = {
 };
 
 const rosterAmarelo = [
-  { jersey: 1, nome: "João Silva", posicao: "Goleiro", categoria: "Sub-15", matricula: "1001", starter: true },
+  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", categoria: "Sub-15", matricula: "1001", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", categoria: "Sub-15", matricula: "1002", starter: true },
   { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", categoria: "Sub-15", matricula: "1003", starter: true },
   { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", categoria: "Sub-15", matricula: "1004", starter: true },
@@ -194,7 +194,16 @@ function shallowPlan(overrides) {
   return { ...plano0207, ...overrides, id: overrides.id ?? plano0207.id };
 }
 function shallowSumula(overrides) {
-  return { ...sumula0207, ...overrides, id: overrides.id ?? sumula0207.id };
+  // confirmedAt herdado de sumula0207 (02/07) ficaria preso a essa data em toda
+  // súmula derivada — deriva a partir da própria sessionDate por padrão, a
+  // menos que o overrides já defina confirmedAt explicitamente (ex.: rascunho).
+  const sessionDate = overrides.sessionDate ?? sumula0207.sessionDate;
+  return {
+    ...sumula0207,
+    confirmedAt: `${sessionDate}T09:00:00`,
+    ...overrides,
+    id: overrides.id ?? sumula0207.id,
+  };
 }
 
 export const treinos = [
@@ -344,16 +353,20 @@ export const planosPendentesIniciais = [
   }),
   shallowPlan({
     id: "plan-pend-3",
-    sessionDate: "2026-06-30",
+    sessionDate: "2026-06-24",
     horario: "16:00",
     categoria: "Sub-15",
     turma: "Turma A",
     team: "Amarelo",
     coachName: "João Silva",
     status: "submitted",
-    // sessionDate fixo no passado — alimenta o card/filtro "Fora do prazo" de forma estável.
-    deadlineAt: calcDeadline("2026-06-30", "16:00"),
-    createdAt: "2026-06-29T15:45:00",
+    // sessionDate fixo no passado — alimenta o card/filtro "Fora do prazo" de forma
+    // estável. Precisa ser uma data sem treino correspondente em `treinos`: reusar
+    // uma data já ocupada (ex.: 30/06, de t-0630) cria dois planos "30/06 · Sub-15 ·
+    // Turma A" com ids e status diferentes — a home mostra um "Aprovado" (o do
+    // treino) e a fila de Aprovações mostra o outro "Aguardando" (achado N-01).
+    deadlineAt: calcDeadline("2026-06-24", "16:00"),
+    createdAt: "2026-06-23T15:45:00",
     approvedAt: undefined,
     approvedBy: undefined,
   }),
