@@ -1,10 +1,9 @@
 import { reactive } from "vue";
-import { findUser } from "../data/users";
+import { findUser } from "./users";
 
 export const ROLE_LABELS = {
-  treinador: "Treinador",
-  head_coach: "Head Coach",
-  gestor: "Gestor",
+  coach: "Coach",
+  admin: "Admin",
   responsavel: "Responsável",
 };
 

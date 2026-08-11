@@ -60,7 +60,7 @@ function backToQueue() {
 }
 
 function handleApprove(id) {
-  approvePlano(id, comment.value.trim() || undefined);
+  approvePlano(id, comment.value.trim() || undefined, session.user.nome);
   status.value = "Plano aprovado.";
   const next = new Set(selected.value);
   next.delete(id);
@@ -70,17 +70,17 @@ function handleApprove(id) {
 
 function handleRequestChanges(id) {
   if (!comment.value.trim()) {
-    commentError.value = "Descreva o que precisa ser ajustado para o treinador.";
+    commentError.value = "Descreva o que precisa ser ajustado para o coach.";
     return;
   }
-  requestChanges(id, comment.value.trim());
-  status.value = "Ajustes solicitados ao treinador.";
+  requestChanges(id, comment.value.trim(), session.user.nome);
+  status.value = "Ajustes solicitados ao coach.";
   backToQueue();
 }
 
 function bulkApproveSelected() {
   const count = selected.value.size;
-  bulkApprove(Array.from(selected.value));
+  bulkApprove(Array.from(selected.value), session.user.nome);
   selected.value = new Set();
   status.value = `${count} ${count === 1 ? "plano aprovado" : "planos aprovados"} em lote.`;
 }
@@ -174,7 +174,7 @@ function onCommentInput(e) {
       </p>
     </Card>
 
-    <Card title="Decisão do Head Coach">
+    <Card title="Decisão do Admin">
       <template #icon><Icon name="edit" class="h-4 w-4" /></template>
       <Field
         label="Comentário"

@@ -3,9 +3,6 @@ import { planosPendentesIniciais, planosDisponiveisParaExecucao } from "../data/
 
 const seedPlanos = [...planosPendentesIniciais, ...planosDisponiveisParaExecucao];
 
-// Nome do Head Coach "logado" nesta demonstração (sem autenticação real).
-const REVIEWER_NAME = "Carla Mendes (Head Coach)";
-
 // Rascunhos criados pelo usuário persistem no navegador (protótipo, sem
 // backend) para poderem ser reabertos e editados depois. Os planos-semente da
 // demonstração continuam sempre "frescos" a cada carga.
@@ -55,37 +52,40 @@ export function updatePlano(plano) {
   upsert(plano);
 }
 
-export function approvePlano(id, comment) {
+// `reviewer` é quem está decidindo (o admin logado) — antes era um nome fixo
+// ("Carla Mendes, Head Coach"), o que ficou incorreto assim que mais de um
+// admin (Raspada Júnior, Gerson) passou a poder aprovar.
+export function approvePlano(id, comment, reviewer) {
   planosStore.planos = planosStore.planos.map((p) =>
     p.id === id
       ? {
           ...p,
           status: "approved",
           approvedAt: new Date().toISOString(),
-          approvedBy: REVIEWER_NAME,
+          approvedBy: reviewer,
           reviewComment: comment?.trim() || undefined,
           reviewedAt: new Date().toISOString(),
-          reviewedBy: REVIEWER_NAME,
+          reviewedBy: reviewer,
         }
       : p,
   );
 }
 
-export function requestChanges(id, comment) {
+export function requestChanges(id, comment, reviewer) {
   planosStore.planos = planosStore.planos.map((p) =>
     p.id === id
       ? {
           ...p,
           status: "changes_requested",
           reviewedAt: new Date().toISOString(),
-          reviewedBy: REVIEWER_NAME,
+          reviewedBy: reviewer,
           reviewComment: comment,
         }
       : p,
   );
 }
 
-export function bulkApprove(ids) {
+export function bulkApprove(ids, reviewer) {
   const idSet = new Set(ids);
   planosStore.planos = planosStore.planos.map((p) =>
     idSet.has(p.id)
@@ -93,9 +93,9 @@ export function bulkApprove(ids) {
           ...p,
           status: "approved",
           approvedAt: new Date().toISOString(),
-          approvedBy: REVIEWER_NAME,
+          approvedBy: reviewer,
           reviewedAt: new Date().toISOString(),
-          reviewedBy: REVIEWER_NAME,
+          reviewedBy: reviewer,
         }
       : p,
   );

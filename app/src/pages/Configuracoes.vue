@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from "vue";
-import Card from "../components/ui/Card.vue";
+import { Card, Field, PrimaryButton, RadioGroup, CheckboxGroup, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
-import { USERS, escopoLabel } from "../data/users";
+import { escopoLabel } from "../data/users";
+import { usersStore, addUser, toggleAtivo } from "../stores/users";
 import { session } from "../stores/session";
 
 function initials(nome) {
@@ -15,23 +16,71 @@ function initials(nome) {
     .toUpperCase();
 }
 
-const currentUser = session.user;
-
-// Estado de "ativo" apenas em memória (protótipo mock, sem backend).
-const inativos = ref(new Set());
-
-function toggle(id) {
-  const next = new Set(inativos.value);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  inativos.value = next;
+function slug(nome) {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]+/g, ".")
+    .replace(/^\.|\.$/g, "");
 }
 
-const cards = [
-  { icon: "network", label: "Unidades e categorias" },
-  { icon: "clipboard", label: "Turmas e treinadores" },
-  { icon: "calendar", label: "Prazos de aprovação" },
-];
+const currentUser = session.user;
+
+const CATEGORIAS = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
+const TURMAS = ["Turma A", "Turma B"];
+const PAPEIS = ["Coach", "Admin"];
+
+// Formulário "Adicionar usuário" — só admins acessam esta tela (guarda de
+// rota); prototípo, sem backend: o usuário criado vive em stores/users.js
+// (localStorage), persiste no navegador e já entra ativo para login.
+const showForm = ref(false);
+const nome = ref("");
+const papel = ref("Coach");
+const categorias = ref([]);
+const turmas = ref([]);
+const turmaPropria = ref(false);
+const senha = ref("");
+const formError = ref(null);
+const status = ref(null);
+
+function resetForm() {
+  nome.value = "";
+  papel.value = "Coach";
+  categorias.value = [];
+  turmas.value = [];
+  turmaPropria.value = false;
+  senha.value = "";
+  formError.value = null;
+}
+
+function handleAddUser() {
+  if (!nome.value.trim()) {
+    formError.value = "Informe o nome do usuário.";
+    return;
+  }
+  if (categorias.value.length === 0 || turmas.value.length === 0) {
+    formError.value = "Selecione ao menos uma categoria e uma turma.";
+    return;
+  }
+  if (!senha.value.trim()) {
+    formError.value = "Defina uma senha de demonstração.";
+    return;
+  }
+  const role = papel.value === "Admin" ? "admin" : "coach";
+  addUser({
+    nome: nome.value.trim(),
+    email: `${slug(nome.value.trim())}@bigsoccer.com`,
+    role,
+    cargo: papel.value,
+    senha: senha.value.trim(),
+    escopo: { unidade: "Atibaia", categorias: [...categorias.value], turmas: [...turmas.value] },
+    ...(turmaPropria.value ? { coachName: nome.value.trim() } : {}),
+  });
+  status.value = `${nome.value.trim()} adicionado(a) como ${papel.value}.`;
+  resetForm();
+  showForm.value = false;
+}
 </script>
 
 <template>
@@ -42,7 +91,7 @@ const cards = [
         Gestão de Acessos
       </h1>
       <p class="mt-1 text-sm text-ink-muted">
-        Administração de usuários e permissões — os gestores controlam quem acessa e o que cada
+        Administração de usuários e permissões — os admins controlam quem acessa e o que cada
         perfil enxerga.
       </p>
     </div>
@@ -52,21 +101,69 @@ const cards = [
       <ul class="flex flex-col gap-2 text-sm text-ink-muted">
         <li>
           <span class="font-medium text-ink">Papel</span> define o que o usuário pode fazer
-          (treinador cria, head coach aprova, gestor administra, responsável acompanha).
+          (coach cria planos, súmulas e execuções; admin aprova os planos e administra os
+          acessos; responsável só acompanha).
         </li>
         <li>
           <span class="font-medium text-ink">Escopo</span> define a área que ele atende
           (unidade, categorias e turmas) — é o recorte do que aparece para ele.
         </li>
-        <li>Ativar/desativar um usuário libera ou bloqueia o acesso dele à plataforma.</li>
+        <li>Ativar/desativar um usuário libera ou bloqueia o login dele na plataforma.</li>
       </ul>
     </Card>
 
-    <Card :title="`Usuários (${USERS.length})`">
+    <p
+      v-if="status"
+      role="status"
+      class="flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary"
+    >
+      <Icon name="check" class="h-4 w-4" /> {{ status }}
+    </p>
+
+    <Card :title="`Usuários (${usersStore.users.length})`">
       <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
+      <template #headerAction>
+        <PrimaryButton variant="secondary" @click="showForm = !showForm">
+          <Icon :name="showForm ? 'x' : 'plus'" class="h-4 w-4" />
+          {{ showForm ? "Cancelar" : "Adicionar usuário" }}
+        </PrimaryButton>
+      </template>
+
+      <div v-if="showForm" class="mb-4 flex flex-col gap-3 rounded-xl border border-line-soft bg-surface-2 p-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Nome" required>
+            <input :class="inputClass" v-model="nome" placeholder="Nome completo" />
+          </Field>
+          <Field label="Senha de demonstração" required hint="Sugestão: primeiro nome + 123.">
+            <input :class="inputClass" v-model="senha" placeholder="ex.: nome123" />
+          </Field>
+        </div>
+        <Field label="Papel">
+          <RadioGroup :options="PAPEIS" v-model="papel" />
+        </Field>
+        <Field label="Categorias" required>
+          <CheckboxGroup :options="CATEGORIAS" v-model="categorias" />
+        </Field>
+        <Field label="Turmas" required>
+          <CheckboxGroup :options="TURMAS" v-model="turmas" />
+        </Field>
+        <label class="flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" class="h-4 w-4 rounded border-line bg-surface-2 text-primary focus:ring-primary" v-model="turmaPropria" />
+          Tem turma própria (aparece como "Treinador Responsável" ao criar planos)
+        </label>
+        <p v-if="formError" role="alert" class="flex items-center gap-1.5 text-sm text-primary-text">
+          <Icon name="alert" class="h-4 w-4" /> {{ formError }}
+        </p>
+        <div>
+          <PrimaryButton @click="handleAddUser">
+            <Icon name="check" class="h-4 w-4" /> Salvar usuário
+          </PrimaryButton>
+        </div>
+      </div>
+
       <ul class="flex flex-col gap-2">
         <li
-          v-for="u in USERS"
+          v-for="u in usersStore.users"
           :key="u.id"
           class="flex flex-col gap-3 rounded-xl border border-line-soft bg-surface-2 p-3 sm:flex-row sm:items-center"
         >
@@ -95,40 +192,24 @@ const cards = [
           </div>
           <button
             type="button"
-            @click="toggle(u.id)"
+            @click="toggleAtivo(u.id)"
             :disabled="u.id === currentUser.id"
-            :aria-pressed="!inativos.has(u.id)"
+            :aria-pressed="u.ativo"
             :class="`flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
-              !inativos.has(u.id)
+              u.ativo
                 ? 'border-secondary/40 bg-secondary/10 text-secondary'
                 : 'border-line bg-surface text-ink-muted'
             }`"
           >
-            <span
-              :class="`h-2 w-2 rounded-full ${!inativos.has(u.id) ? 'bg-secondary' : 'bg-ink-faint'}`"
-              aria-hidden="true"
-            />
-            {{ !inativos.has(u.id) ? "Ativo" : "Inativo" }}
+            <span :class="`h-2 w-2 rounded-full ${u.ativo ? 'bg-secondary' : 'bg-ink-faint'}`" aria-hidden="true" />
+            {{ u.ativo ? "Ativo" : "Inativo" }}
           </button>
         </li>
       </ul>
       <p class="mt-3 text-xs text-ink-muted">
-        Protótipo — alterações de acesso são simuladas nesta tela e não persistem.
+        Protótipo — usuários adicionados e o estado ativo/inativo ficam salvos neste navegador
+        (sem backend). Um usuário inativo não consegue fazer login.
       </p>
     </Card>
-
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Card v-for="item in cards" :key="item.label">
-        <div class="flex items-center gap-3 text-ink-muted">
-          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-ink-muted">
-            <Icon :name="item.icon" class="h-5 w-5" />
-          </span>
-          <div>
-            <p class="text-sm font-medium text-ink">{{ item.label }}</p>
-            <p class="text-xs text-ink-muted">Em definição</p>
-          </div>
-        </div>
-      </Card>
-    </div>
   </div>
 </template>

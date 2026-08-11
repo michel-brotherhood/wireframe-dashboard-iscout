@@ -2,8 +2,10 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import logo from "../assets/brand/marca-principal.png";
-import { USERS, escopoLabel } from "../data/users";
+import { escopoLabel } from "../data/users";
+import { usersStore, verifyLogin } from "../stores/users";
 import { login } from "../stores/session";
+import { Field, inputClass, inputErrorClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 
 function initials(nome) {
@@ -16,8 +18,16 @@ function initials(nome) {
     .toUpperCase();
 }
 
-const selectedId = ref(USERS[0].id);
-const selected = computed(() => USERS.find((u) => u.id === selectedId.value));
+const users = computed(() => usersStore.users);
+const selectedId = ref(usersStore.users[0].id);
+const selected = computed(() => usersStore.users.find((u) => u.id === selectedId.value));
+const senha = ref("");
+const error = ref(null);
+
+function selectUser(id) {
+  selectedId.value = id;
+  error.value = null;
+}
 
 const router = useRouter();
 
@@ -28,8 +38,13 @@ const router = useRouter();
 // para "/" antes de autenticar garante que o usuário sempre entra pela home
 // do próprio papel, validada pela guarda.
 async function handleLogin() {
+  const user = verifyLogin(selectedId.value, senha.value);
+  if (!user) {
+    error.value = selected.value.ativo === false ? "Este usuário está inativo." : "Senha incorreta.";
+    return;
+  }
   await router.push("/");
-  login(selected.value);
+  login(user);
 }
 </script>
 
@@ -40,8 +55,8 @@ async function handleLogin() {
         <img :src="logo" alt="BIG SOCCER by iSCOUT" class="h-12 w-auto" />
         <h1 class="font-heading mt-6 text-xl font-semibold text-ink">Acessar plataforma</h1>
         <p class="mt-1 text-sm text-ink-muted">
-          Ambiente de demonstração — escolha um perfil para entrar. O acesso de cada
-          usuário é definido pelo cargo e pela área que ele atende.
+          Selecione seu usuário e informe a senha. O acesso de cada usuário é definido pelo
+          papel (Coach cria, Admin aprova e administra) e pela área que ele atende.
         </p>
       </div>
 
@@ -52,12 +67,15 @@ async function handleLogin() {
           </legend>
           <div class="flex flex-col gap-2">
             <label
-              v-for="u in USERS"
+              v-for="u in users"
               :key="u.id"
-              :class="`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
-                u.id === selectedId
-                  ? 'border-primary bg-primary/10'
-                  : 'border-line-soft bg-surface-2 hover:border-ink-faint'
+              :class="`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                u.ativo === false
+                  ? 'cursor-not-allowed border-line-soft bg-surface-2 opacity-50'
+                  : 'cursor-pointer ' +
+                    (u.id === selectedId
+                      ? 'border-primary bg-primary/10'
+                      : 'border-line-soft bg-surface-2 hover:border-ink-faint')
               }`"
             >
               <input
@@ -65,7 +83,8 @@ async function handleLogin() {
                 name="usuario"
                 :value="u.id"
                 :checked="u.id === selectedId"
-                @change="selectedId = u.id"
+                :disabled="u.ativo === false"
+                @change="selectUser(u.id)"
                 class="sr-only"
               />
               <span
@@ -82,6 +101,9 @@ async function handleLogin() {
                   <span class="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-ink-muted">
                     {{ u.cargo }}
                   </span>
+                  <span v-if="u.ativo === false" class="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary-text">
+                    Inativo
+                  </span>
                 </span>
                 <span class="mt-0.5 block truncate text-xs text-ink-muted">{{ escopoLabel(u) }}</span>
               </span>
@@ -89,6 +111,20 @@ async function handleLogin() {
             </label>
           </div>
         </fieldset>
+
+        <div class="mt-4">
+          <Field label="Senha" required :error="error">
+            <input
+              type="password"
+              :class="error ? inputErrorClass : inputClass"
+              :value="senha"
+              autocomplete="current-password"
+              placeholder="Senha de demonstração"
+              @input="senha = $event.target.value; error = null"
+              @keydown.enter="handleLogin"
+            />
+          </Field>
+        </div>
 
         <button
           type="button"
@@ -101,7 +137,8 @@ async function handleLogin() {
       </div>
 
       <p class="mt-4 text-center text-xs text-ink-muted">
-        Protótipo — autenticação simulada, sem senha e sem servidor.
+        Protótipo — login e senha simulados no navegador, sem servidor. Senha de demonstração:
+        primeiro nome em minúsculas + "123" (ex.: joao123).
       </p>
     </div>
   </div>

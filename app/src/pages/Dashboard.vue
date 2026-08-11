@@ -29,30 +29,18 @@ function buildCards(role, planos, treinosList) {
   const sumulasPendentes = treinosList.filter((t) => t.sumula.status === "draft").length;
   const semPlano = treinosList.filter(treinoSemPlanoAprovado).length;
 
-  if (role === "treinador") {
+  if (role === "coach") {
     return [
       { icon: "calendar", label: "Próximas Aulas", value: proximas },
-      { icon: "stamp", label: "Aguardando Aprovação", value: aguardando, sub: "Submetidos ao Head Coach" },
+      { icon: "stamp", label: "Aguardando Aprovação", value: aguardando, sub: "Submetidos para aprovação" },
       { icon: "clipboard", label: "Planos em Rascunho", value: planos.filter((p) => p.status === "draft").length },
       { icon: "alert", label: "Planos Devolvidos", value: ajustes, sub: "Ajustes solicitados", tone: "warning" },
       { icon: "check", label: "Planos Aprovados", value: planos.filter((p) => p.status === "approved").length },
     ];
   }
 
-  if (role === "gestor") {
-    const turmas = new Set(treinosList.map((t) => `${t.categoria}-${t.turma}`)).size;
-    const treinadores = new Set(treinosList.map((t) => t.coachName)).size;
-    const categorias = new Set(treinosList.map((t) => t.categoria)).size;
-    return [
-      { icon: "network", label: "Turmas Ativas", value: turmas },
-      { icon: "clipboard", label: "Treinadores", value: treinadores },
-      { icon: "ball", label: "Categorias", value: categorias },
-      { icon: "calendar", label: "Planos Fora do Prazo", value: foraDoPrazo, tone: "warning" },
-      { icon: "barChart", label: "Executadas sem Plano Aprovado", value: semPlano, tone: "warning" },
-    ];
-  }
-
-  // head_coach (padrão) — os 6 cards operacionais definidos no briefing.
+  // admin (padrão) — os 6 cards operacionais focados em aprovação, já que é
+  // quem aprova os planos submetidos pelos coaches e administra os acessos.
   return [
     { icon: "alert", label: "Aguardando Aprovação", value: aguardando, to: "/planos/aprovacao" },
     { icon: "edit", label: "Ajustes Solicitados", value: ajustes, to: "/planos/aprovacao", tone: "warning" },
@@ -128,11 +116,7 @@ const filteredTreinos = computed(() =>
 const cards = computed(() => buildCards(role.value, escopedPlanos.value, escopedTreinos.value));
 const rascunhos = computed(() => escopedPlanos.value.filter((p) => p.status === "draft"));
 const roleTitle = computed(() =>
-  role.value === "gestor"
-    ? "Visão geral da operação"
-    : role.value === "treinador"
-      ? "Minhas aulas e planos"
-      : "Painel central de gestão pedagógica e operacional",
+  role.value === "admin" ? "Painel central de gestão pedagógica e operacional" : "Minhas aulas e planos",
 );
 
 function onTreinoKey(e, id) {
@@ -153,7 +137,7 @@ function onTreinoKey(e, id) {
           {{ roleTitle }}
         </h1>
       </div>
-      <PrimaryButton v-if="role === 'treinador'" @click="navigate('/planos/novo')">
+      <PrimaryButton v-if="role === 'coach' || role === 'admin'" @click="navigate('/planos/novo')">
         <Icon name="plus" class="h-4 w-4" />
         Novo Plano
       </PrimaryButton>
@@ -257,7 +241,7 @@ function onTreinoKey(e, id) {
         </button>
       </Card>
       <Card
-        v-if="role === 'gestor'"
+        v-if="role === 'admin'"
         class="col-span-2 cursor-pointer transition-colors hover:border-primary/40 sm:col-span-1"
       >
         <button
@@ -281,7 +265,7 @@ function onTreinoKey(e, id) {
       </Card>
     </div>
 
-    <Card v-if="role === 'treinador' && rascunhos.length > 0" :title="`Meus Rascunhos (${rascunhos.length})`">
+    <Card v-if="role !== 'responsavel' && rascunhos.length > 0" :title="`Meus Rascunhos (${rascunhos.length})`">
       <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
       <ul class="flex flex-col gap-2">
         <li v-for="p in rascunhos" :key="p.id">

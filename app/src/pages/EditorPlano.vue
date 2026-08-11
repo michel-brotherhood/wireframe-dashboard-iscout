@@ -18,6 +18,8 @@ import {
 } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { planosStore, addPlano, saveDraft, updatePlano } from "../stores/planos";
+import { usersStore } from "../stores/users";
+import { session } from "../stores/session";
 import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
 import { MATERIAIS, OBJETIVOS, ORIENTACOES } from "../data/planoOptions";
 import EstacaoForm from "./_EstacaoForm.vue";
@@ -25,7 +27,9 @@ import DiagramUpload from "./_DiagramUpload.vue";
 
 const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"];
 
-const COACHES = ["João Silva", "Maria Santos"];
+// Treinador Responsável = quem tem turma própria (coachName) — independe do
+// papel (coach/admin): um admin com turma própria (ex.: Gerson) também entra.
+const coachOptions = computed(() => Array.from(new Set(usersStore.users.filter((u) => u.coachName).map((u) => u.coachName))));
 const PERIODOS = ["Manhã", "Tarde", "Noite"];
 const SEMANAS = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
 const FASES = Object.keys(FASE_TEMAS);
@@ -61,7 +65,7 @@ const periodo = ref(initialDraft?.periodo ?? "Tarde");
 const semana = ref(initialDraft?.semana ?? "Semana 1");
 const categoria = ref(initialDraft?.categoria ?? "Sub-15");
 const turma = ref(initialDraft?.turma ?? "Turma A");
-const coachName = ref(initialDraft?.coachName ?? COACHES[0]);
+const coachName = ref(initialDraft?.coachName ?? session.user?.coachName ?? coachOptions.value[0]);
 const team = ref(initialDraft?.team ?? "Amarelo");
 const fase = ref(initialDraft?.fase ?? FASES[0]);
 const tema = ref(initialDraft?.tema ?? FASE_TEMAS[FASES[0]][0].tema);
@@ -361,7 +365,7 @@ function onPrincipalDuracaoInput(e) {
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Treinador Responsável" required hint="Selecionado explicitamente — não é definido pela cor do colete.">
           <select :class="inputClass" v-model="coachName">
-            <option v-for="c in COACHES" :key="c">{{ c }}</option>
+            <option v-for="c in coachOptions" :key="c">{{ c }}</option>
           </select>
         </Field>
         <Field label="Fase do Jogo" required>
