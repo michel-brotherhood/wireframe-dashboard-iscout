@@ -19,7 +19,7 @@ export const USERS = [
     email: "carla.mendes@bigsoccer.com",
     role: "coach",
     cargo: "Coach",
-    senha: "carla123",
+    senha: "iscout",
     // Segue com visão ampla da unidade (herdada do antigo papel Head Coach),
     // mas sem turma própria — não aparece como "Treinador Responsável".
     escopo: {
@@ -34,7 +34,7 @@ export const USERS = [
     email: "joao.silva@bigsoccer.com",
     role: "coach",
     cargo: "Coach",
-    senha: "joao123",
+    senha: "iscout",
     // Atende exclusivamente a Sub-15 Turma A.
     escopo: { unidade: "Atibaia", categorias: ["Sub-15"], turmas: ["Turma A"] },
     coachName: "João Silva",
@@ -45,7 +45,7 @@ export const USERS = [
     email: "maria.santos@bigsoccer.com",
     role: "coach",
     cargo: "Coach",
-    senha: "maria123",
+    senha: "iscout",
     // Atende exclusivamente a Sub-17 Turma B.
     escopo: { unidade: "Atibaia", categorias: ["Sub-17"], turmas: ["Turma B"] },
     coachName: "Maria Santos",
@@ -56,7 +56,7 @@ export const USERS = [
     email: "gerson@bigsoccer.com",
     role: "admin",
     cargo: "Admin",
-    senha: "gerson123",
+    senha: "iscout",
     // Mantém a Sub-13 Turma A (coachName) mesmo como admin — ver escopoContem:
     // papel admin já dá visão total, coachName segue valendo para ele
     // aparecer como "Treinador Responsável" ao criar planos para essa turma.
@@ -69,7 +69,7 @@ export const USERS = [
     email: "roberto.lima@bigsoccer.com",
     role: "coach",
     cargo: "Coach",
-    senha: "roberto123",
+    senha: "iscout",
     escopo: {
       unidade: "Atibaia",
       categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
@@ -82,7 +82,7 @@ export const USERS = [
     email: "raspada@bigsoccer.com",
     role: "admin",
     cargo: "Admin",
-    senha: "raspada123",
+    senha: "iscout",
     escopo: {
       unidade: "Atibaia",
       categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
@@ -95,7 +95,7 @@ export const USERS = [
     email: "mario@bigsoccer.com",
     role: "coach",
     cargo: "Coach",
-    senha: "mario123",
+    senha: "iscout",
     escopo: {
       unidade: "Atibaia",
       categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
@@ -108,7 +108,7 @@ export const USERS = [
     email: "ana.costa@email.com",
     role: "responsavel",
     cargo: "Responsável",
-    senha: "ana123",
+    senha: "iscout",
     // Responsável por atleta da Sub-15 Turma A — só acompanha essa turma.
     escopo: { unidade: "Atibaia", categorias: ["Sub-15"], turmas: ["Turma A"] },
   },

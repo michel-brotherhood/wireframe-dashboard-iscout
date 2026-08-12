@@ -40,7 +40,9 @@ const papel = ref("Coach");
 const categorias = ref([]);
 const turmas = ref([]);
 const turmaPropria = ref(false);
-const senha = ref("");
+// Senha única de demonstração ("iscout") pré-preenchida — protótipo, sem
+// necessidade de senha forte; o admin pode trocar se quiser outra.
+const senha = ref("iscout");
 const formError = ref(null);
 const status = ref(null);
 
@@ -50,7 +52,7 @@ function resetForm() {
   categorias.value = [];
   turmas.value = [];
   turmaPropria.value = false;
-  senha.value = "";
+  senha.value = "iscout";
   formError.value = null;
 }
 
@@ -140,8 +142,8 @@ function handleAddUser() {
           <Field label="Nome" required>
             <input :class="inputClass" v-model="nome" placeholder="Nome completo" />
           </Field>
-          <Field label="Senha de demonstração" required hint="Sugestão: primeiro nome + 123.">
-            <input :class="inputClass" v-model="senha" placeholder="ex.: nome123" />
+          <Field label="Senha de demonstração" required hint="Padrão do protótipo: iscout — pode trocar se quiser.">
+            <input :class="inputClass" v-model="senha" placeholder="ex.: iscout" />
           </Field>
         </div>
         <Field label="Papel">

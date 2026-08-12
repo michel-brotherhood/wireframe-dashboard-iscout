@@ -49,8 +49,8 @@ function clearError() {
             :class="inputClass"
             :value="nomeLogin"
             autocomplete="username"
-            autocapitalize="words"
-            placeholder="Seu nome"
+            autocapitalize="none"
+            placeholder="Seu nome (ex.: gerson)"
             @input="nomeLogin = $event.target.value; clearError()"
           />
         </Field>
@@ -79,7 +79,8 @@ function clearError() {
       </form>
 
       <p class="mt-4 text-center text-xs text-ink-muted">
-        Protótipo — login e senha simulados no navegador, sem servidor.
+        Protótipo — login e senha simulados no navegador, sem servidor. Senha de demonstração
+        para todos os usuários: <span class="font-medium text-ink">iscout</span>.
       </p>
     </div>
   </div>
