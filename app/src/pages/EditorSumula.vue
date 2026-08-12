@@ -4,10 +4,9 @@ import { ambiguousMatches } from "../data/mockData";
 import { findAtletaByMatricula } from "../data/atletas";
 import { Card, Field, PrimaryButton, RadioGroup, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
-import { POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
+import { CATEGORIAS, POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
 
 const BLOCKED_JERSEYS = [24, 51, 69];
-const CATEGORIAS = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
 
 // Matrícula válida e única já identifica o atleta — resolve automaticamente.
 // Sem matrícula, o nome precisa ser conferido contra o cadastro: se bate com

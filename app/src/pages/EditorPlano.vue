@@ -21,7 +21,7 @@ import { planosStore, addPlano, saveDraft, updatePlano } from "../stores/planos"
 import { usersStore } from "../stores/users";
 import { session } from "../stores/session";
 import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
-import { MATERIAIS, OBJETIVOS, ORIENTACOES } from "../data/planoOptions";
+import { CATEGORIAS, MATERIAIS, OBJETIVOS, ORIENTACOES } from "../data/planoOptions";
 import EstacaoForm from "./_EstacaoForm.vue";
 import DiagramUpload from "./_DiagramUpload.vue";
 
@@ -33,7 +33,6 @@ const coachOptions = computed(() => Array.from(new Set(usersStore.users.filter((
 const PERIODOS = ["Manhã", "Tarde", "Noite"];
 const SEMANAS = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
 const FASES = Object.keys(FASE_TEMAS);
-const CATEGORIAS = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
 const TURMAS = ["Turma A", "Turma B"];
 
 function formatDateTime(iso) {
