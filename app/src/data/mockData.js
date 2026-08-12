@@ -1,3 +1,5 @@
+import { findAtletaByMatricula } from "./atletas";
+
 // "Agora" real do sistema — nunca uma data congelada. Centralizado aqui (em
 // vez de `new Date()` espalhado pelo código) para que toda comparação com o
 // instante atual passe por um único ponto. `now` é opcional e só existe para
@@ -76,6 +78,9 @@ export const FASE_TEMAS = {
   ],
 };
 
+// `atletaId` resolvido a partir do registro único (data/atletas.js) por
+// matrícula, não digitado à mão — evita a escalação e o cadastro de atletas
+// divergirem silenciosamente (ver auditoria "Evolução do Dashboard", Fase 1).
 const rosterAmarelo = [
   { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", categoria: "Sub-15", matricula: "1001", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", categoria: "Sub-15", matricula: "1002", starter: true },
@@ -88,7 +93,7 @@ const rosterAmarelo = [
   { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", categoria: "Sub-15", matricula: "1009", starter: true },
   { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", categoria: "Sub-15", matricula: "1010", starter: true },
   { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", categoria: "Sub-15", matricula: "1011", starter: true },
-];
+].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
 
 const plano0207 = {
   id: "plan-0207",

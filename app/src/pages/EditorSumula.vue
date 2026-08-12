@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { ambiguousMatches } from "../data/mockData";
+import { findAtletaByMatricula } from "../data/atletas";
 import { Card, Field, PrimaryButton, RadioGroup, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
@@ -20,6 +21,7 @@ function resolutionStatus(row, selections) {
   return selections[row.jersey] ? "resolved" : "ambiguous";
 }
 
+// `atletaId` resolvido pela matrícula contra o registro único (data/atletas.js).
 const initialRoster = [
   { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", matricula: "1001", starter: true },
   { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true },
@@ -32,7 +34,7 @@ const initialRoster = [
   { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", matricula: "1009", starter: true },
   { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", matricula: "1010", starter: true },
   { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", matricula: "1011", starter: true },
-];
+].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
 
 const categoria = ref("Sub-15");
 const sessao = ref("Sessão 1 - Campo 2");
@@ -70,7 +72,11 @@ function handleAdd() {
   }
 
   const posicao = newPosicao.value === "Outro" ? newPosicaoOutro.value.trim() || "—" : newPosicao.value;
-  roster.value = [...roster.value, { jersey: jerseyNum, nome: newNome.value.trim(), posicao, matricula: newMatricula.value.trim(), starter: newStarter.value }];
+  const matricula = newMatricula.value.trim();
+  roster.value = [
+    ...roster.value,
+    { jersey: jerseyNum, nome: newNome.value.trim(), posicao, matricula, starter: newStarter.value, atletaId: findAtletaByMatricula(matricula)?.id },
+  ];
   newJersey.value = "";
   newNome.value = "";
   newMatricula.value = "";
