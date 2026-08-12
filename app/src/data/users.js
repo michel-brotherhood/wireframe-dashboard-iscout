@@ -24,7 +24,7 @@ export const USERS = [
     // mas sem turma própria — não aparece como "Treinador Responsável".
     escopo: {
       unidade: "Atibaia",
-      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      categorias: ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Sub-20"],
       turmas: ["Turma A", "Turma B"],
     },
   },
@@ -72,7 +72,7 @@ export const USERS = [
     senha: "iscout",
     escopo: {
       unidade: "Atibaia",
-      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      categorias: ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Sub-20"],
       turmas: ["Turma A", "Turma B"],
     },
   },
@@ -85,7 +85,7 @@ export const USERS = [
     senha: "iscout",
     escopo: {
       unidade: "Atibaia",
-      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      categorias: ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Sub-20"],
       turmas: ["Turma A", "Turma B"],
     },
   },
@@ -98,7 +98,7 @@ export const USERS = [
     senha: "iscout",
     escopo: {
       unidade: "Atibaia",
-      categorias: ["Sub-13", "Sub-15", "Sub-17", "Sub-20"],
+      categorias: ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Sub-20"],
       turmas: ["Turma A", "Turma B"],
     },
   },

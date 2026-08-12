@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { Card, Field, PrimaryButton, RadioGroup, CheckboxGroup, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { escopoLabel } from "../data/users";
+import { CATEGORIAS } from "../data/planoOptions";
 import { usersStore, addUser, toggleAtivo, nomeEmUso } from "../stores/users";
 import { session } from "../stores/session";
 
@@ -27,7 +28,6 @@ function slug(nome) {
 
 const currentUser = session.user;
 
-const CATEGORIAS = ["Sub-13", "Sub-15", "Sub-17", "Sub-20"];
 const TURMAS = ["Turma A", "Turma B"];
 const PAPEIS = ["Coach", "Admin"];
 
