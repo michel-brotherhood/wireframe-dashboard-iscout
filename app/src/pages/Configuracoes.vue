@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { Card, Field, PrimaryButton, RadioGroup, CheckboxGroup, inputClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { escopoLabel } from "../data/users";
-import { usersStore, addUser, toggleAtivo } from "../stores/users";
+import { usersStore, addUser, toggleAtivo, nomeEmUso } from "../stores/users";
 import { session } from "../stores/session";
 
 function initials(nome) {
@@ -57,6 +57,12 @@ function resetForm() {
 function handleAddUser() {
   if (!nome.value.trim()) {
     formError.value = "Informe o nome do usuário.";
+    return;
+  }
+  // Login identifica o usuário pelo nome — um nome repetido deixaria um dos
+  // dois inacessível na tela de login.
+  if (nomeEmUso(nome.value)) {
+    formError.value = "Já existe um usuário com esse nome — use um nome diferente para o login funcionar.";
     return;
   }
   if (categorias.value.length === 0 || turmas.value.length === 0) {
