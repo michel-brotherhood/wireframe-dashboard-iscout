@@ -51,11 +51,33 @@ export function findUser(id) {
   return usersStore.users.find((u) => u.id === id);
 }
 
-// Login mock: usuário existe, está ativo e a senha de demonstração confere.
-export function verifyLogin(id, senha) {
-  const user = findUser(id);
+// Compara nomes tolerando acento/maiúsculas e espaços extras — o login é o
+// nome digitado à mão, não um id selecionado de uma lista.
+function normalizeNome(nome) {
+  return nome
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+// Login mock: usuário existe (por nome), está ativo e a senha confere. Não
+// diferencia "usuário não encontrado" de "senha errada" na mensagem de erro
+// (padrão de login comum, evita vazar quais nomes existem no sistema).
+export function verifyLoginByNome(nome, senha) {
+  const target = normalizeNome(nome);
+  const user = usersStore.users.find((u) => normalizeNome(u.nome) === target);
   if (!user || !user.ativo) return null;
   return user.senha === senha ? user : null;
+}
+
+// Login identifica o usuário pelo nome — um nome duplicado deixaria o
+// segundo usuário inacessível (o primeiro match sempre "ganha"). Usado pela
+// Gestão de Acessos para bloquear a criação de um nome já em uso.
+export function nomeEmUso(nome) {
+  const target = normalizeNome(nome);
+  return usersStore.users.some((u) => normalizeNome(u.nome) === target);
 }
 
 let seq = 1;

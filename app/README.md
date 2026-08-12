@@ -49,11 +49,14 @@ public/
 
 ## Modelo de usuários, papéis e escopo
 
-Login é mock: escolher um usuário e informar a senha de demonstração define
-`role` + `escopo` da sessão. Usuários-semente em `src/data/users.js`; a lista
-completa (semente + usuários adicionados pela tela de acesso) vive em
-`src/stores/users.js` (`usersStore`), persistida em `localStorage` — sem
-backend real, senha simulada no navegador.
+Login é mock: um formulário padrão de "Login" (o nome do usuário, ex.: "João
+Silva") e "Senha" define `role` + `escopo` da sessão — `verifyLoginByNome`
+(`stores/users.js`) compara por nome (tolerando acento/maiúsculas). Usuários-
+semente em `src/data/users.js`; a lista completa (semente + usuários
+adicionados pela tela de acesso) vive em `src/stores/users.js` (`usersStore`),
+persistida em `localStorage` — sem backend real, senha simulada no navegador.
+Como o login identifica pelo nome, a Gestão de Acessos bloqueia nomes
+duplicados (`nomeEmUso`) ao criar um usuário novo.
 
 - **Papéis (`role`)**: `coach` (cria planos, súmulas e execuções) |
   `admin` (aprova planos submetidos pelos coaches e administra os acessos —
