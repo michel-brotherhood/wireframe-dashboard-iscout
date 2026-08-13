@@ -3,9 +3,21 @@ import { ref, computed } from "vue";
 import { Card, PrimaryButton, ProgressBar, conformanceTextColor } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { session } from "../stores/session";
+import { dashboardFilters, resetDashboardFilters } from "../stores/dashboardFilters";
 import { gruposDeReforco } from "../data/fundamentos";
 
-const grupos = computed(() => gruposDeReforco(session.user));
+// Reaproveita o mesmo recorte escolhido no Dashboard (Unidade/Categoria/
+// Turma/Treinador) — chegar aqui pelo card de Indicadores mantém o contexto
+// em vez de mostrar o escopo inteiro do usuário de novo.
+const grupos = computed(() => gruposDeReforco(session.user, dashboardFilters));
+const filtroAtivo = computed(() =>
+  [
+    dashboardFilters.unidade !== "Todas" ? dashboardFilters.unidade : null,
+    dashboardFilters.categoria !== "Todas" ? dashboardFilters.categoria : null,
+    dashboardFilters.turma !== "Todas" ? dashboardFilters.turma : null,
+    dashboardFilters.treinador !== "Todos" ? dashboardFilters.treinador : null,
+  ].filter(Boolean),
+);
 const status = ref(null);
 
 function sugerir(fundamento, qtd) {
@@ -44,9 +56,22 @@ function contexto(a) {
       <Icon name="check" class="h-4 w-4" /> {{ status }}
     </p>
 
+    <div
+      v-if="filtroAtivo.length > 0"
+      class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line-soft bg-surface-2 p-3 text-sm"
+    >
+      <span class="text-ink-muted">
+        Filtrado por: <span class="font-medium text-ink">{{ filtroAtivo.join(" · ") }}</span>
+        (mesmo recorte do Dashboard)
+      </span>
+      <button type="button" @click="resetDashboardFilters" class="shrink-0 text-xs font-medium text-primary-text hover:underline">
+        Ver todos
+      </button>
+    </div>
+
     <p v-if="grupos.length === 0" class="rounded-2xl border border-line bg-surface p-4 text-sm text-ink-muted">
-      Nenhum grupo de reforço sugerido no seu escopo no momento — os atletas estão dentro do esperado nos
-      fundamentos avaliados.
+      Nenhum grupo de reforço sugerido {{ filtroAtivo.length > 0 ? "com este filtro" : "no seu escopo" }} no
+      momento — os atletas estão dentro do esperado nos fundamentos avaliados.
     </p>
 
     <Card v-for="g in grupos" :key="g.fundamento" :title="`Reforço: ${g.fundamento}`">

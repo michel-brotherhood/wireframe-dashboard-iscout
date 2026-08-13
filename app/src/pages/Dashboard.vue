@@ -6,6 +6,7 @@ import { Card, StatusBadge, PrimaryButton, ProgressBar, inputClass } from "../co
 import Icon from "../components/Icon.vue";
 import { planosStore } from "../stores/planos";
 import { session } from "../stores/session";
+import { dashboardFilters, resetDashboardFilters } from "../stores/dashboardFilters";
 import { escopoContem } from "../data/users";
 import { resumoReforco } from "../data/fundamentos";
 import ResumoResponsavel from "./ResumoResponsavel.vue";
@@ -71,26 +72,35 @@ const role = computed(() => session.user.role);
 
 // Recorte por escopo do usuário: cada perfil só enxerga os treinos/planos da
 // sua área de atuação (unidade + categorias/turmas; treinador só os próprios).
-const reforco = computed(() => resumoReforco(session.user));
+// Os filtros (Unidade/Categoria/Turma/Treinador/Status) vivem em um store
+// persistido (stores/dashboardFilters.js): o recorte escolhido aqui também
+// alimenta o card de Indicadores de Fundamentos e a tela de Reforço, e
+// continua aplicado ao navegar para outra tela e voltar.
+const reforco = computed(() => resumoReforco(session.user, dashboardFilters));
 const escopedTreinos = computed(() => treinos.filter((t) => escopoContem(t, session.user)));
 const escopedPlanos = computed(() => planosStore.planos.filter((p) => escopoContem(p, session.user)));
 
-const dataFilter = ref("2026-07-02");
-const unidadeFilter = ref("Todas");
-const categoriaFilter = ref("Todas");
-const turmaFilter = ref("Todas");
-const treinadorFilter = ref("Todos");
-const statusFilter = ref("Todos");
 // No mobile os filtros ficam recolhidos por padrão para o conteúdo principal
 // aparecer sem scroll; o badge mostra quantos filtros estão ativos.
 const filtersOpen = ref(false);
 const activeFilterCount = computed(() =>
   [
-    unidadeFilter.value !== "Todas",
-    categoriaFilter.value !== "Todas",
-    turmaFilter.value !== "Todas",
-    treinadorFilter.value !== "Todos",
-    statusFilter.value !== "Todos",
+    dashboardFilters.unidade !== "Todas",
+    dashboardFilters.categoria !== "Todas",
+    dashboardFilters.turma !== "Todas",
+    dashboardFilters.treinador !== "Todos",
+    dashboardFilters.status !== "Todos",
+  ].filter(Boolean).length,
+);
+// Só Unidade/Categoria/Turma/Treinador têm sentido para os indicadores de
+// fundamentos (Status é sobre plano de aula, não sobre o atleta) — usado para
+// a nota de recorte no card de Indicadores.
+const activeIndicatorFilterCount = computed(() =>
+  [
+    dashboardFilters.unidade !== "Todas",
+    dashboardFilters.categoria !== "Todas",
+    dashboardFilters.turma !== "Todas",
+    dashboardFilters.treinador !== "Todos",
   ].filter(Boolean).length,
 );
 
@@ -101,13 +111,17 @@ const treinadores = computed(() => Array.from(new Set(escopedTreinos.value.map((
 
 const filteredTreinos = computed(() =>
   escopedTreinos.value.filter((t) => {
-    if (dataFilter.value && t.sessionDate > dataFilter.value) return false;
-    if (unidadeFilter.value !== "Todas" && t.unidade !== unidadeFilter.value) return false;
-    if (categoriaFilter.value !== "Todas" && t.categoria !== categoriaFilter.value) return false;
-    if (turmaFilter.value !== "Todas" && t.turma !== turmaFilter.value) return false;
-    if (treinadorFilter.value !== "Todos" && t.coachName !== treinadorFilter.value) return false;
-    if (statusFilter.value === "fora_do_prazo" && !isPastDeadline(t.plano)) return false;
-    else if (statusFilter.value !== "Todos" && statusFilter.value !== "fora_do_prazo" && t.plano.status !== statusFilter.value)
+    if (dashboardFilters.data && t.sessionDate > dashboardFilters.data) return false;
+    if (dashboardFilters.unidade !== "Todas" && t.unidade !== dashboardFilters.unidade) return false;
+    if (dashboardFilters.categoria !== "Todas" && t.categoria !== dashboardFilters.categoria) return false;
+    if (dashboardFilters.turma !== "Todas" && t.turma !== dashboardFilters.turma) return false;
+    if (dashboardFilters.treinador !== "Todos" && t.coachName !== dashboardFilters.treinador) return false;
+    if (dashboardFilters.status === "fora_do_prazo" && !isPastDeadline(t.plano)) return false;
+    else if (
+      dashboardFilters.status !== "Todos" &&
+      dashboardFilters.status !== "fora_do_prazo" &&
+      t.plano.status !== dashboardFilters.status
+    )
       return false;
     return true;
   }),
@@ -163,6 +177,21 @@ function onTreinoKey(e, id) {
         </span>
         <Icon name="chevronDown" :class="`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`" />
       </button>
+      <div v-if="activeFilterCount > 0" class="mb-3 flex items-center justify-between gap-2 sm:justify-end">
+        <span class="hidden items-center gap-2 text-sm font-medium text-ink sm:flex">
+          <Icon name="filter" class="h-4 w-4 text-primary" /> Filtros
+          <span class="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary-text">
+            {{ activeFilterCount }} {{ activeFilterCount === 1 ? "ativo" : "ativos" }}
+          </span>
+        </span>
+        <button
+          type="button"
+          @click="resetDashboardFilters"
+          class="text-xs font-medium text-primary-text hover:underline"
+        >
+          Limpar filtros
+        </button>
+      </div>
       <form
         id="dashboard-filtros"
         :class="`${filtersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-6`"
@@ -170,39 +199,39 @@ function onTreinoKey(e, id) {
       >
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Período (até)</span>
-          <input type="date" v-model="dataFilter" :class="inputClass" />
+          <input type="date" v-model="dashboardFilters.data" :class="inputClass" />
         </label>
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Unidade</span>
-          <select :class="inputClass" v-model="unidadeFilter">
+          <select :class="inputClass" v-model="dashboardFilters.unidade">
             <option>Todas</option>
             <option v-for="u in unidades" :key="u">{{ u }}</option>
           </select>
         </label>
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Categoria</span>
-          <select :class="inputClass" v-model="categoriaFilter">
+          <select :class="inputClass" v-model="dashboardFilters.categoria">
             <option>Todas</option>
             <option v-for="c in categorias" :key="c">{{ c }}</option>
           </select>
         </label>
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Turma</span>
-          <select :class="inputClass" v-model="turmaFilter">
+          <select :class="inputClass" v-model="dashboardFilters.turma">
             <option>Todas</option>
             <option v-for="t in turmas" :key="t">{{ t }}</option>
           </select>
         </label>
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Treinador</span>
-          <select :class="inputClass" v-model="treinadorFilter">
+          <select :class="inputClass" v-model="dashboardFilters.treinador">
             <option>Todos</option>
             <option v-for="c in treinadores" :key="c">{{ c }}</option>
           </select>
         </label>
         <label>
           <span class="mb-1 block text-xs font-medium text-ink-muted">Status</span>
-          <select :class="inputClass" v-model="statusFilter">
+          <select :class="inputClass" v-model="dashboardFilters.status">
             <option v-for="o in STATUS_FILTER_OPTIONS" :key="o.value" :value="o.value">
               {{ o.label }}
             </option>
@@ -300,6 +329,9 @@ function onTreinoKey(e, id) {
           Ver reforço <Icon name="arrowRight" class="h-3.5 w-3.5" />
         </PrimaryButton>
       </template>
+      <p v-if="activeIndicatorFilterCount > 0" class="mb-3 text-xs text-ink-muted">
+        Recorte pelos filtros do Dashboard acima.
+      </p>
       <template v-if="reforco.sinalizados > 0">
         <p class="mb-3 text-sm text-ink-muted">
           <span class="font-semibold text-ink">{{ reforco.sinalizados }}</span> de {{ reforco.totalAvaliados }}

@@ -14,16 +14,29 @@ export const FUNDAMENTOS = ["Cabeceio", "Passe", "Lançamento", "Domínio", "Fin
 // resto do app: conformanceColor considera < 60 como "vermelho").
 export const LIMITE_REFORCO = 60;
 
-// Atletas dentro do escopo (perfil) do usuário logado.
-export function atletasNoEscopo(user) {
-  return atletas.filter((a) => escopoContem(a, user));
+// Recorte adicional opcional (mesmos filtros do Dashboard: unidade, categoria,
+// turma, treinador) — "Todas"/"Todos" ou campo ausente = sem restrição nesse
+// eixo. Permite que o card de Indicadores no Dashboard e a tela de Reforço
+// mostrem o mesmo recorte que o usuário já escolheu, sem duplicar o filtro.
+function combinaComFiltros(item, filtros) {
+  if (filtros.unidade && filtros.unidade !== "Todas" && item.unidade !== filtros.unidade) return false;
+  if (filtros.categoria && filtros.categoria !== "Todas" && item.categoria !== filtros.categoria) return false;
+  if (filtros.turma && filtros.turma !== "Todas" && item.turma !== filtros.turma) return false;
+  if (filtros.treinador && filtros.treinador !== "Todos" && item.coachName !== filtros.treinador) return false;
+  return true;
+}
+
+// Atletas dentro do escopo (perfil) do usuário logado, com o recorte extra
+// dos filtros do Dashboard (quando informado).
+export function atletasNoEscopo(user, filtros = {}) {
+  return atletas.filter((a) => escopoContem(a, user) && combinaComFiltros(a, filtros));
 }
 
 // Grupos de reforço sugeridos: por fundamento, os atletas do escopo com nota
 // abaixo do limite, ordenados do mais fraco para o menos fraco. Só vira "grupo"
 // quando há pelo menos 2 atletas (faz sentido reunir para um treino de reforço).
-export function gruposDeReforco(user) {
-  const pool = atletasNoEscopo(user);
+export function gruposDeReforco(user, filtros = {}) {
+  const pool = atletasNoEscopo(user, filtros);
   return FUNDAMENTOS.map((fundamento) => {
     const fracos = pool
       .filter((a) => a.fundamentos[fundamento] < LIMITE_REFORCO)
@@ -38,8 +51,8 @@ export function gruposDeReforco(user) {
 
 // Resumo para o Dashboard: total avaliado, quantos atletas têm ao menos uma
 // deficiência, e os fundamentos com mais atletas sinalizados.
-export function resumoReforco(user) {
-  const pool = atletasNoEscopo(user);
+export function resumoReforco(user, filtros = {}) {
+  const pool = atletasNoEscopo(user, filtros);
   const sinalizados = pool.filter((a) => FUNDAMENTOS.some((f) => a.fundamentos[f] < LIMITE_REFORCO));
   const topFundamentos = FUNDAMENTOS.map((fundamento) => {
     const fracos = pool.filter((a) => a.fundamentos[fundamento] < LIMITE_REFORCO);
