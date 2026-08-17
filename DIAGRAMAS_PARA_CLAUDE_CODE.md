@@ -1,5 +1,7 @@
 # 📊 DIAGRAMAS MERMAID
-## Dashboard de Gestão de Treinos - BIG SOCCER by iSCOUT
+## Dashboard de Gestão de Treinos - BIG SOCCER by iSCOUT 
+
+olhar certinho
 
 ---
 
