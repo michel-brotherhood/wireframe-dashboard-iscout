@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import logo from "../assets/brand/marca-principal.png";
 import logoCompact from "../assets/brand/marca-compacta.png";
+import fotoPerfil from "../assets/brand/fotoperfil.jpeg";
 import Icon from "./Icon.vue";
 import NotificationBell from "./NotificationBell.vue";
 import { session, logout } from "../stores/session";
@@ -50,15 +51,6 @@ function pageTitleForPath(pathname, role) {
   return "";
 }
 
-function initials(nome) {
-  return nome
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
-}
 
 const route = useRoute();
 const router = useRouter();
@@ -146,12 +138,12 @@ const hasBottomNav = computed(
           <NotificationBell />
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-2 rounded-lg border border-line bg-surface-2 py-1 pl-1 pr-2">
-              <span
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-hover text-xs font-semibold text-white"
+              <img
+                :src="fotoPerfil"
+                alt=""
                 aria-hidden="true"
-              >
-                {{ initials(user.nome) }}
-              </span>
+                class="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
               <span class="hidden leading-tight sm:block">
                 <span class="block text-xs font-semibold text-ink">{{ user.nome }}</span>
                 <span class="block text-[11px] text-ink-muted">{{ user.cargo }}</span>
