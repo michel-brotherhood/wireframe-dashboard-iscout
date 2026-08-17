@@ -7,6 +7,16 @@ import { USERS as SEED_USERS } from "../data/users";
 // carregam "frescos"; só os adicionados/os estados de ativo/inativo persistem.
 const ADDED_KEY = "iscout.usersAdded";
 const ATIVOS_KEY = "iscout.usersInativos";
+const REMOVIDOS_KEY = "iscout.usersRemovidos";
+
+// Só estes dois usuários podem excluir contas na Gestão de Acessos — são os
+// administradores "donos" da operação (Gerson e Raspada). Um admin comum
+// criado depois administra acessos e aprova planos, mas não apaga usuários.
+export const SUPER_ADMIN_IDS = ["u-gerson", "u-raspada"];
+
+export function podeExcluirUsuarios(user) {
+  return !!user && SUPER_ADMIN_IDS.includes(user.id);
+}
 
 function readAdded() {
   try {
@@ -18,9 +28,9 @@ function readAdded() {
   }
 }
 
-function readInativos() {
+function readIdSet(key) {
   try {
-    const raw = localStorage.getItem(ATIVOS_KEY);
+    const raw = localStorage.getItem(key);
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? new Set(arr) : new Set();
   } catch {
@@ -28,10 +38,23 @@ function readInativos() {
   }
 }
 
-const inativos = readInativos();
+const inativos = readIdSet(ATIVOS_KEY);
+// Usuários-semente excluídos ficam registrados aqui para não reaparecerem no
+// reload (usuários customizados somem sozinhos, pois não são re-adicionados).
+const removidos = readIdSet(REMOVIDOS_KEY);
+
+function persistRemovidos() {
+  try {
+    localStorage.setItem(REMOVIDOS_KEY, JSON.stringify([...removidos]));
+  } catch {
+    // ambiente sem localStorage — segue só em memória
+  }
+}
 
 export const usersStore = reactive({
-  users: [...SEED_USERS, ...readAdded()].map((u) => ({ ...u, ativo: !inativos.has(u.id) })),
+  users: [...SEED_USERS, ...readAdded()]
+    .filter((u) => !removidos.has(u.id))
+    .map((u) => ({ ...u, ativo: !inativos.has(u.id) })),
 });
 
 watch(
@@ -90,4 +113,17 @@ export function addUser(user) {
 
 export function toggleAtivo(id) {
   usersStore.users = usersStore.users.map((u) => (u.id === id ? { ...u, ativo: !u.ativo } : u));
+}
+
+// Exclui um usuário. Customizados somem só de removê-los da lista (o watch não
+// os re-persiste); usuários-semente precisam entrar no conjunto "removidos"
+// para não reaparecerem no próximo carregamento.
+export function deleteUser(id) {
+  const alvo = usersStore.users.find((u) => u.id === id);
+  if (!alvo) return;
+  usersStore.users = usersStore.users.filter((u) => u.id !== id);
+  if (!alvo.isCustom) {
+    removidos.add(id);
+    persistRemovidos();
+  }
 }
