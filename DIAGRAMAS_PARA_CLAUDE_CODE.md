@@ -1,4 +1,4 @@
-# 📊 DIAGRAMAS MERMAID - PARA CLAUDE CODE VISUALIZAR
+# 📊 DIAGRAMAS MERMAID
 ## Dashboard de Gestão de Treinos - BIG SOCCER by iSCOUT
 
 **Use estes diagramas como referência visual enquanto cria os wireframes**
