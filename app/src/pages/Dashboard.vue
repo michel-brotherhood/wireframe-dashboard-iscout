@@ -292,6 +292,27 @@ function onTreinoKey(e, id) {
           </div>
         </button>
       </Card>
+      <Card
+        v-if="role === 'coach' || role === 'admin'"
+        class="col-span-2 cursor-pointer transition-colors hover:border-primary/40 sm:col-span-1"
+      >
+        <button
+          type="button"
+          @click="navigate('/partidas/nova')"
+          class="flex w-full items-center gap-2.5 text-left sm:gap-3"
+        >
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary sm:h-10 sm:w-10">
+            <Icon name="ball" class="h-5 w-5" />
+          </span>
+          <div class="flex min-w-0 flex-1 items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-ink-muted">Jogo</p>
+              <p class="text-base font-semibold text-ink">Registrar Partida</p>
+            </div>
+            <Icon name="arrowRight" class="h-4 w-4 shrink-0 text-ink-muted" />
+          </div>
+        </button>
+      </Card>
     </div>
 
     <Card v-if="role !== 'responsavel' && rascunhos.length > 0" :title="`Meus Rascunhos (${rascunhos.length})`">
