@@ -4,7 +4,7 @@ import { Card, Field, PrimaryButton, RadioGroup, CheckboxGroup, inputClass } fro
 import Icon from "../components/Icon.vue";
 import { escopoLabel } from "../data/users";
 import { CATEGORIAS } from "../data/planoOptions";
-import { usersStore, addUser, toggleAtivo, nomeEmUso } from "../stores/users";
+import { usersStore, addUser, toggleAtivo, nomeEmUso, deleteUser, podeExcluirUsuarios } from "../stores/users";
 import { session } from "../stores/session";
 
 function initials(nome) {
@@ -27,9 +27,27 @@ function slug(nome) {
 }
 
 const currentUser = session.user;
+// Só Gerson e Raspada podem excluir usuários (ver SUPER_ADMIN_IDS).
+const podeExcluir = podeExcluirUsuarios(currentUser);
 
 const TURMAS = ["Turma A", "Turma B"];
 const PAPEIS = ["Coach", "Admin"];
+
+// Exclusão pede confirmação inline (ação irreversível): 1º clique arma, 2º
+// confirma. `confirmandoId` guarda qual usuário está aguardando confirmação.
+const confirmandoId = ref(null);
+
+function pedirExclusao(id) {
+  confirmandoId.value = id;
+}
+function cancelarExclusao() {
+  confirmandoId.value = null;
+}
+function confirmarExclusao(u) {
+  deleteUser(u.id);
+  confirmandoId.value = null;
+  status.value = `${u.nome} foi removido(a).`;
+}
 
 // Formulário "Adicionar usuário" — só admins acessam esta tela (guarda de
 // rota); prototípo, sem backend: o usuário criado vive em stores/users.js
@@ -219,25 +237,58 @@ function handleAddUser() {
               <p class="mt-0.5 truncate text-xs text-ink-muted">{{ escopoLabel(u) }}</p>
             </div>
           </div>
-          <button
-            type="button"
-            @click="toggleAtivo(u.id)"
-            :disabled="u.id === currentUser.id"
-            :aria-pressed="u.ativo"
-            :class="`flex shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
-              u.ativo
-                ? 'border-secondary/40 bg-secondary/10 text-secondary'
-                : 'border-line bg-surface text-ink-muted'
-            }`"
-          >
-            <span :class="`h-2 w-2 rounded-full ${u.ativo ? 'bg-secondary' : 'bg-ink-faint'}`" aria-hidden="true" />
-            {{ u.ativo ? "Ativo" : "Inativo" }}
-          </button>
+          <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              @click="toggleAtivo(u.id)"
+              :disabled="u.id === currentUser.id"
+              :aria-pressed="u.ativo"
+              :class="`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                u.ativo
+                  ? 'border-secondary/40 bg-secondary/10 text-secondary'
+                  : 'border-line bg-surface text-ink-muted'
+              }`"
+            >
+              <span :class="`h-2 w-2 rounded-full ${u.ativo ? 'bg-secondary' : 'bg-ink-faint'}`" aria-hidden="true" />
+              {{ u.ativo ? "Ativo" : "Inativo" }}
+            </button>
+
+            <!-- Exclusão: só Gerson/Raspada, e nunca a própria conta. -->
+            <template v-if="podeExcluir && u.id !== currentUser.id">
+              <template v-if="confirmandoId === u.id">
+                <button
+                  type="button"
+                  @click="confirmarExclusao(u)"
+                  class="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-medium text-primary-text hover:bg-primary/15"
+                >
+                  <Icon name="check" class="h-3.5 w-3.5" /> Confirmar
+                </button>
+                <button
+                  type="button"
+                  @click="cancelarExclusao"
+                  class="rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted hover:text-ink"
+                >
+                  Cancelar
+                </button>
+              </template>
+              <button
+                v-else
+                type="button"
+                @click="pedirExclusao(u.id)"
+                :aria-label="`Excluir ${u.nome}`"
+                class="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs font-medium text-ink-muted transition-colors hover:border-primary/40 hover:text-primary-text"
+              >
+                <Icon name="x" class="h-3.5 w-3.5" /> Excluir
+              </button>
+            </template>
+          </div>
         </li>
       </ul>
       <p class="mt-3 text-xs text-ink-muted">
         Protótipo — usuários adicionados e o estado ativo/inativo ficam salvos neste navegador
         (sem backend). Um usuário inativo não consegue fazer login.
+        <template v-if="podeExcluir"> Excluir remove o usuário de vez.</template>
+        <template v-else> Excluir usuários é restrito aos administradores Gerson e Raspada.</template>
       </p>
     </Card>
   </div>
