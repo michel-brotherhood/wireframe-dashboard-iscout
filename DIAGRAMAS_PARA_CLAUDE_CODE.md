@@ -1,8 +1,6 @@
 # 📊 DIAGRAMAS MERMAID
 ## Dashboard de Gestão de Treinos - BIG SOCCER by iSCOUT
 
-**Use estes diagramas como referência visual enquanto cria os wireframes**
-
 ---
 
 ## DIAGRAMA 1: ARQUITETURA DO SISTEMA
