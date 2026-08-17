@@ -20,14 +20,16 @@ function formatDate(iso) {
   return `${d}/${m}`;
 }
 
-// Responsável só acompanha a turma do seu atleta (escopo do usuário).
+// Responsável só acompanha a turma do seu atleta (escopo do usuário). Sem
+// treino no escopo, mostra estado vazio — nunca cai para um treino global
+// (data de outra família), que quebraria o isolamento desta tela.
 const meusTreinos = computed(() => treinos.filter((t) => escopoContem(t, session.user)));
 const ultimoTreino = computed(
-  () => meusTreinos.value.find((t) => t.status === "Executado") ?? meusTreinos.value[0] ?? treinos[0]
+  () => meusTreinos.value.find((t) => t.status === "Executado") ?? meusTreinos.value[0] ?? null
 );
-const plano = computed(() => ultimoTreino.value.plano);
-const sumula = computed(() => ultimoTreino.value.sumula);
-const presente = computed(() => sumula.value.entries.some((e) => e.nome === MEU_ATLETA));
+const plano = computed(() => ultimoTreino.value?.plano ?? null);
+const sumula = computed(() => ultimoTreino.value?.sumula ?? null);
+const presente = computed(() => sumula.value?.entries.some((e) => e.nome === MEU_ATLETA) ?? false);
 </script>
 
 <template>
@@ -37,47 +39,57 @@ const presente = computed(() => sumula.value.entries.some((e) => e.nome === MEU_
         <Icon name="trophy" class="h-6 w-6 text-primary" />
         Resumo da Aula
       </h1>
-      <p class="mt-1 text-sm text-ink-muted">
+      <p v-if="ultimoTreino" class="mt-1 text-sm text-ink-muted">
         {{ formatDate(ultimoTreino.sessionDate) }} · {{ ultimoTreino.categoria }} · {{ ultimoTreino.turma }}
       </p>
     </div>
 
-    <Card title="O que foi trabalhado">
-      <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
-      <div class="flex flex-col gap-3 text-sm">
-        <div>
-          <p class="text-ink-muted">Tema trabalhado</p>
-          <p class="font-medium text-ink">
-            {{ plano.tema }} · {{ plano.subtema }}
-          </p>
-        </div>
-        <div>
-          <p class="text-ink-muted">Objetivo pedagógico</p>
-          <p class="font-medium text-ink">{{ plano.etapaPrincipal.objetivo }}</p>
-        </div>
-        <div>
-          <p class="text-ink-muted">Fase de jogo</p>
-          <p class="font-medium text-ink">{{ plano.fase }}</p>
-        </div>
-      </div>
+    <Card v-if="!ultimoTreino">
+      <p class="flex items-start gap-2 text-sm text-ink-muted">
+        <Icon name="alert" class="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+        Nenhuma aula registrada para a turma do seu atleta ainda. Assim que uma sessão for realizada,
+        o resumo aparece aqui.
+      </p>
     </Card>
 
-    <Card title="Presença">
-      <template #icon><Icon name="check" class="h-4 w-4" /></template>
-      <div class="flex items-center gap-2 text-sm">
-        <span
-          :class="`flex h-8 w-8 items-center justify-center rounded-full ${
-            presente ? 'bg-secondary/15 text-secondary' : 'bg-primary/15 text-primary-text'
-          }`"
-        >
-          <Icon :name="presente ? 'check' : 'x'" class="h-4 w-4" />
-        </span>
-        <div>
-          <p class="font-medium text-ink">{{ MEU_ATLETA }}</p>
-          <p class="text-ink-muted">{{ presente ? "Presente nesta aula" : "Ausente nesta aula" }}</p>
+    <template v-if="ultimoTreino">
+      <Card title="O que foi trabalhado">
+        <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
+        <div class="flex flex-col gap-3 text-sm">
+          <div>
+            <p class="text-ink-muted">Tema trabalhado</p>
+            <p class="font-medium text-ink">
+              {{ plano.tema }} · {{ plano.subtema }}
+            </p>
+          </div>
+          <div>
+            <p class="text-ink-muted">Objetivo pedagógico</p>
+            <p class="font-medium text-ink">{{ plano.etapaPrincipal.objetivo }}</p>
+          </div>
+          <div>
+            <p class="text-ink-muted">Fase de jogo</p>
+            <p class="font-medium text-ink">{{ plano.fase }}</p>
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      <Card title="Presença">
+        <template #icon><Icon name="check" class="h-4 w-4" /></template>
+        <div class="flex items-center gap-2 text-sm">
+          <span
+            :class="`flex h-8 w-8 items-center justify-center rounded-full ${
+              presente ? 'bg-secondary/15 text-secondary' : 'bg-primary/15 text-primary-text'
+            }`"
+          >
+            <Icon :name="presente ? 'check' : 'x'" class="h-4 w-4" />
+          </span>
+          <div>
+            <p class="font-medium text-ink">{{ MEU_ATLETA }}</p>
+            <p class="text-ink-muted">{{ presente ? "Presente nesta aula" : "Ausente nesta aula" }}</p>
+          </div>
+        </div>
+      </Card>
+    </template>
 
     <Card title="Comunicados">
       <template #icon><Icon name="alert" class="h-4 w-4" /></template>

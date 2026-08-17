@@ -75,6 +75,17 @@ h1, h2, h3, .font-heading {
   background: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
+/* Esconde a barra de rolagem mantendo o scroll funcional — usada na navegação
+   do header, que rola horizontalmente quando há muitos itens (perfil admin em
+   telas estreitas) em vez de sobrepor a logo ou empurrar o botão Sair para
+   fora da viewport. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Respeita a preferência do sistema por menos movimento: neutraliza
    transições/animações para quem ativou "reduzir movimento" (a11y). */
 @media (prefers-reduced-motion: reduce) {

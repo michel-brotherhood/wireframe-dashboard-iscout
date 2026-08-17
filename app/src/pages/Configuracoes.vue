@@ -43,6 +43,9 @@ const turmaPropria = ref(false);
 // Senha única de demonstração ("iscout") pré-preenchida — protótipo, sem
 // necessidade de senha forte; o admin pode trocar se quiser outra.
 const senha = ref("iscout");
+// Campo mascarado por padrão (type=password); toggle deixa conferir o valor —
+// útil porque o admin define a senha de outra pessoa e precisa saber o que ficou.
+const mostrarSenha = ref(false);
 const formError = ref(null);
 const status = ref(null);
 
@@ -53,6 +56,7 @@ function resetForm() {
   turmas.value = [];
   turmaPropria.value = false;
   senha.value = "iscout";
+  mostrarSenha.value = false;
   formError.value = null;
 }
 
@@ -143,7 +147,24 @@ function handleAddUser() {
             <input :class="inputClass" v-model="nome" placeholder="Nome completo" />
           </Field>
           <Field label="Senha de demonstração" required hint="Padrão do protótipo: iscout — pode trocar se quiser.">
-            <input :class="inputClass" v-model="senha" placeholder="ex.: iscout" />
+            <div class="relative">
+              <input
+                :type="mostrarSenha ? 'text' : 'password'"
+                :class="`${inputClass} pr-11`"
+                v-model="senha"
+                autocomplete="new-password"
+                placeholder="ex.: iscout"
+              />
+              <button
+                type="button"
+                @click="mostrarSenha = !mostrarSenha"
+                :aria-label="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+                :aria-pressed="mostrarSenha"
+                class="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-ink-muted hover:text-ink"
+              >
+                <Icon :name="mostrarSenha ? 'eyeOff' : 'eye'" class="h-4 w-4" />
+              </button>
+            </div>
           </Field>
         </div>
         <Field label="Papel">
