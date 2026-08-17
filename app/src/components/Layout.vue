@@ -9,25 +9,30 @@ import { session, logout } from "../stores/session";
 
 // Cada perfil vê ações diferentes — coach cria planos/súmulas/execuções,
 // admin aprova planos e administra acessos, responsável só acompanha.
+// `short` é o rótulo compacto da barra inferior (mobile) — rótulos longos como
+// "Registrar Execução" quebravam em várias linhas e colidiam com o vizinho em
+// telas de 320-375px, sobretudo no admin (6 abas + FAB).
 function navItemsForRole(role) {
-  const items = [{ to: "/", label: role === "responsavel" ? "Resumo" : "Dashboard", icon: "lineChart" }];
+  const items = [
+    { to: "/", label: role === "responsavel" ? "Resumo" : "Dashboard", short: role === "responsavel" ? "Resumo" : "Início", icon: "lineChart" },
+  ];
   if (role !== "responsavel") {
     items.push(
-      { to: "/planos/novo", label: "Novo Plano", icon: "clipboard" },
-      { to: "/sumulas/novo", label: "Nova Súmula", icon: "ball" },
-      { to: "/execution/novo", label: "Registrar Execução", icon: "barChart" },
+      { to: "/planos/novo", label: "Novo Plano", short: "Plano", icon: "clipboard" },
+      { to: "/sumulas/novo", label: "Nova Súmula", short: "Súmula", icon: "ball" },
+      { to: "/execution/novo", label: "Registrar Execução", short: "Execução", icon: "barChart" },
     );
   }
   if (role === "admin") {
     // Admin aprova planos submetidos pelos coaches e administra os acessos.
     items.push(
-      { to: "/planos/aprovacao", label: "Aprovações", icon: "stamp" },
-      { to: "/configuracoes", label: "Acessos", icon: "menu" },
+      { to: "/planos/aprovacao", label: "Aprovações", short: "Aprovar", icon: "stamp" },
+      { to: "/configuracoes", label: "Acessos", short: "Acessos", icon: "menu" },
     );
   }
   // Recomendações de reforço (IA) — para quem planeja/supervisiona treinos.
   if (role !== "responsavel") {
-    items.push({ to: "/reforco", label: "Reforço", icon: "bot" });
+    items.push({ to: "/reforco", label: "Reforço", short: "Reforço", icon: "bot" });
   }
   return items;
 }
@@ -117,7 +122,7 @@ const hasBottomNav = computed(
           </template>
         </div>
 
-        <nav class="hidden items-center gap-1 md:flex" aria-label="Navegação principal">
+        <nav class="no-scrollbar hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex" aria-label="Navegação principal">
           <router-link
             v-for="item in items"
             :key="item.to"
@@ -128,7 +133,7 @@ const hasBottomNav = computed(
             <a
               :href="href"
               @click="navigate"
-              :class="`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              :class="`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 (item.to === '/' ? isExactActive : isActive)
                   ? 'bg-primary/15 text-primary-text'
                   : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
@@ -139,12 +144,12 @@ const hasBottomNav = computed(
             </a>
           </router-link>
           <template v-if="showArquitetura">
-            <span aria-hidden="true" class="mx-1 h-5 w-px bg-line" />
+            <span aria-hidden="true" class="mx-1 h-5 w-px shrink-0 bg-line" />
             <a
               :href="ARQUITETURA_MERMAID_URL"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+              class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
             >
               <Icon :name="referenceNavItem.icon" class="h-4 w-4" />
               {{ referenceNavItem.label }}
@@ -153,14 +158,14 @@ const hasBottomNav = computed(
           </template>
         </nav>
 
-        <div class="flex items-center gap-2">
+        <div class="flex shrink-0 items-center gap-2">
           <a
             v-if="showArquitetura"
             :href="ARQUITETURA_MERMAID_URL"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Arquitetura do sistema no Mermaid (abre em nova aba)"
-            class="flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink-muted md:hidden"
+            class="flex h-11 w-11 items-center justify-center rounded-lg border border-line text-ink-muted lg:hidden"
           >
             <Icon :name="referenceNavItem.icon" class="h-4 w-4" />
           </a>
@@ -193,7 +198,7 @@ const hasBottomNav = computed(
     </header>
 
     <main
-      :class="`mx-auto max-w-7xl px-4 pt-6 sm:px-6 ${hasBottomNav ? 'pb-24 md:pb-6' : 'pb-6'}`"
+      :class="`mx-auto max-w-7xl px-4 pt-6 sm:px-6 ${hasBottomNav ? 'pb-24 lg:pb-6' : 'pb-6'}`"
       id="main-content"
     >
       <slot />
@@ -202,7 +207,7 @@ const hasBottomNav = computed(
     <nav
       v-if="hasBottomNav"
       aria-label="Navegação principal (mobile)"
-      class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur lg:hidden"
     >
       <div class="mx-auto flex max-w-md items-center px-2 pb-[max(0.375rem,env(safe-area-inset-bottom))] pt-1.5">
         <router-link
@@ -215,12 +220,12 @@ const hasBottomNav = computed(
           <a
             :href="href"
             @click="navigate"
-            :class="`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${
+            :class="`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[11px] font-medium leading-tight transition-colors ${
               (item.to === '/' ? isExactActive : isActive) ? 'text-primary-text' : 'text-ink-muted hover:text-ink'
             }`"
           >
-            <Icon :name="item.icon" class="h-5 w-5" />
-            {{ item.label }}
+            <Icon :name="item.icon" class="h-5 w-5 shrink-0" />
+            <span class="w-full truncate text-center">{{ item.short || item.label }}</span>
           </a>
         </router-link>
 
@@ -252,12 +257,12 @@ const hasBottomNav = computed(
           <a
             :href="href"
             @click="navigate"
-            :class="`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors ${
+            :class="`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-1.5 text-[11px] font-medium leading-tight transition-colors ${
               (item.to === '/' ? isExactActive : isActive) ? 'text-primary-text' : 'text-ink-muted hover:text-ink'
             }`"
           >
-            <Icon :name="item.icon" class="h-5 w-5" />
-            {{ item.label }}
+            <Icon :name="item.icon" class="h-5 w-5 shrink-0" />
+            <span class="w-full truncate text-center">{{ item.short || item.label }}</span>
           </a>
         </router-link>
       </div>

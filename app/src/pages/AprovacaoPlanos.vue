@@ -78,10 +78,24 @@ function handleRequestChanges(id) {
   backToQueue();
 }
 
+// Aprovar em lote é irreversível — pede confirmação explícita em vez de
+// aprovar direto no primeiro clique (um clique errado numa seleção grande
+// aprovaria tudo sem volta).
+const confirmingBulk = ref(false);
+
+function requestBulkApprove() {
+  confirmingBulk.value = true;
+}
+
+function cancelBulkApprove() {
+  confirmingBulk.value = false;
+}
+
 function bulkApproveSelected() {
   const count = selected.value.size;
   bulkApprove(Array.from(selected.value), session.user.nome);
   selected.value = new Set();
+  confirmingBulk.value = false;
   status.value = `${count} ${count === 1 ? "plano aprovado" : "planos aprovados"} em lote.`;
 }
 
@@ -90,6 +104,8 @@ function toggleSelect(id) {
   if (next.has(id)) next.delete(id);
   else next.add(id);
   selected.value = next;
+  // Mudar a seleção invalida uma confirmação pendente.
+  confirmingBulk.value = false;
 }
 
 function onCommentInput(e) {
@@ -224,9 +240,18 @@ function onCommentInput(e) {
     <Card :title="`Fila de Aprovação (${pendentes.length})`">
       <template #icon><Icon name="alert" class="h-4 w-4" /></template>
       <template v-if="selected.size > 0" #headerAction>
-        <PrimaryButton @click="bulkApproveSelected">
+        <PrimaryButton v-if="!confirmingBulk" @click="requestBulkApprove">
           <Icon name="check" class="h-4 w-4" /> Aprovar Selecionados ({{ selected.size }})
         </PrimaryButton>
+        <div v-else class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-ink-muted">
+            Aprovar {{ selected.size }} {{ selected.size === 1 ? "plano" : "planos" }}?
+          </span>
+          <PrimaryButton @click="bulkApproveSelected">
+            <Icon name="check" class="h-4 w-4" /> Confirmar
+          </PrimaryButton>
+          <PrimaryButton variant="ghost" @click="cancelBulkApprove">Cancelar</PrimaryButton>
+        </div>
       </template>
       <p v-if="pendentes.length === 0" class="text-sm text-ink-muted">Nenhum plano aguardando decisão no momento.</p>
       <div v-else class="flex flex-col gap-3">

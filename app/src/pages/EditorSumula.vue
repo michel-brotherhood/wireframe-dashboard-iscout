@@ -35,8 +35,17 @@ const initialRoster = [
   { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", matricula: "1011", starter: true },
 ].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
 
+const data = ref("2026-07-02");
 const categoria = ref("Sub-15");
+const corColete = ref("Amarelo");
 const sessao = ref("Sessão 1 - Campo 2");
+
+// Cabeçalho reflete a data escolhida (antes era um literal fixo, ignorando o
+// campo). ISO (yyyy-mm-dd) → dd/mm/yyyy sem depender de fuso do Date.
+const dataFormatada = computed(() => {
+  const [y, m, d] = data.value.split("-");
+  return d && m && y ? `${d}/${m}/${y}` : data.value;
+});
 const roster = ref(initialRoster);
 const newJersey = ref("");
 const newNome = ref("");
@@ -104,6 +113,10 @@ const canConfirm = computed(
 
 const resolvedCount = computed(() => statuses.value.filter((s) => s.status === "resolved").length);
 
+function confirmarEscalacao() {
+  status.value = `Escalação confirmada e projetada — ${dataFormatada.value} · ${categoria.value} · Colete ${corColete.value} · ${roster.value.length} atletas.`;
+}
+
 function matchFor(nome) {
   return ambiguousMatches.find((m) => m.nome === nome);
 }
@@ -116,21 +129,21 @@ function pickSelection(jersey, id) {
 <template>
   <div class="flex flex-col gap-6">
     <h1 class="font-heading text-xl font-semibold text-ink sm:text-2xl">
-      Criar Súmula — 02/07/2026 — {{ categoria }}
+      Criar Súmula — {{ dataFormatada }} — {{ categoria }}
     </h1>
 
     <Card>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Field label="Data" required>
-          <input type="date" :class="inputClass" value="2026-07-02" />
+          <input type="date" :class="inputClass" v-model="data" />
         </Field>
         <Field label="Categoria" required>
-          <select :class="inputClass" :value="categoria" @change="categoria = $event.target.value">
+          <select :class="inputClass" v-model="categoria">
             <option v-for="c in CATEGORIAS" :key="c">{{ c }}</option>
           </select>
         </Field>
         <Field label="Cor do Colete" required>
-          <select :class="inputClass" value="Amarelo">
+          <select :class="inputClass" v-model="corColete">
             <option>Amarelo</option>
             <option>Azul</option>
           </select>
@@ -281,7 +294,7 @@ function pickSelection(jersey, id) {
       >
         Resolver Nomes<template v-if="pendingAmbiguous.length + notFound.length > 0"> ({{ pendingAmbiguous.length + notFound.length }})</template>
       </PrimaryButton>
-      <PrimaryButton :disabled="!canConfirm" @click="status = 'Escalação confirmada e projetada.'">
+      <PrimaryButton :disabled="!canConfirm" @click="confirmarEscalacao">
         Confirmar Escalação
       </PrimaryButton>
     </div>
