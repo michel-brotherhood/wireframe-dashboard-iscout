@@ -75,6 +75,19 @@ const execRows = computed(() => {
 
 const status = ref(null);
 
+// Editar reabre o PRÓPRIO plano: rascunho/devolvido edita no lugar; um plano
+// já aprovado/executado abre uma cópia (duplicar) para não alterar o original.
+function editarPlano() {
+  const p = plano.value;
+  if (p?.id && (p.status === "draft" || p.status === "changes_requested")) {
+    router.push(`/planos/novo?draft=${p.id}`);
+  } else if (p?.id) {
+    router.push(`/planos/novo?base=${p.id}`);
+  } else {
+    router.push("/planos/novo");
+  }
+}
+
 function handleExport() {
   status.value = "Relatório exportado (PDF) — download simulado para este wireframe.";
 }
@@ -109,7 +122,7 @@ async function handleShare() {
         </div>
       </div>
       <div v-if="canEdit" class="flex flex-wrap gap-2">
-        <PrimaryButton variant="secondary" @click="router.push('/planos/novo')">
+        <PrimaryButton variant="secondary" @click="editarPlano">
           <Icon name="edit" class="h-4 w-4" /> Editar
         </PrimaryButton>
         <PrimaryButton variant="secondary" @click="handleExport">
@@ -342,7 +355,7 @@ async function handleShare() {
       </div>
 
       <div v-if="canEdit" class="mt-4 flex flex-wrap gap-2">
-        <PrimaryButton variant="secondary" @click="router.push('/planos/novo')">
+        <PrimaryButton variant="secondary" @click="editarPlano">
           <Icon name="edit" class="h-4 w-4" /> Editar
         </PrimaryButton>
         <PrimaryButton variant="secondary" @click="handleExport">

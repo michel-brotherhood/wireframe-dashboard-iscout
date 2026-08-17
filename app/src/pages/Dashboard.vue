@@ -33,10 +33,10 @@ function buildCards(role, planos, treinosList) {
   if (role === "coach") {
     return [
       { icon: "calendar", label: "Próximas Aulas", value: proximas },
-      { icon: "stamp", label: "Aguardando Aprovação", value: aguardando, sub: "Submetidos para aprovação" },
-      { icon: "clipboard", label: "Planos em Rascunho", value: planos.filter((p) => p.status === "draft").length },
-      { icon: "alert", label: "Planos Devolvidos", value: ajustes, sub: "Ajustes solicitados", tone: "warning" },
-      { icon: "check", label: "Planos Aprovados", value: planos.filter((p) => p.status === "approved").length },
+      { icon: "stamp", label: "Aguardando Aprovação", value: aguardando, sub: "Submetidos para aprovação", to: "/planos?status=submitted" },
+      { icon: "clipboard", label: "Planos em Rascunho", value: planos.filter((p) => p.status === "draft").length, to: "/planos?status=draft" },
+      { icon: "alert", label: "Planos Devolvidos", value: ajustes, sub: "Ajustes solicitados", tone: "warning", to: "/planos?status=changes_requested" },
+      { icon: "check", label: "Planos Aprovados", value: planos.filter((p) => p.status === "approved").length, to: "/planos?status=approved" },
     ];
   }
 
@@ -151,10 +151,16 @@ function onTreinoKey(e, id) {
           {{ roleTitle }}
         </h1>
       </div>
-      <PrimaryButton v-if="role === 'coach' || role === 'admin'" @click="navigate('/planos/novo')">
-        <Icon name="plus" class="h-4 w-4" />
-        Novo Plano
-      </PrimaryButton>
+      <div v-if="role === 'coach' || role === 'admin'" class="flex flex-wrap gap-2">
+        <PrimaryButton variant="secondary" @click="navigate('/planos')">
+          <Icon name="clipboard" class="h-4 w-4" />
+          Meus Planos
+        </PrimaryButton>
+        <PrimaryButton @click="navigate('/planos/novo')">
+          <Icon name="plus" class="h-4 w-4" />
+          Novo Plano
+        </PrimaryButton>
+      </div>
     </div>
 
     <Card>
@@ -317,6 +323,15 @@ function onTreinoKey(e, id) {
 
     <Card v-if="role !== 'responsavel' && rascunhos.length > 0" :title="`Meus Rascunhos (${rascunhos.length})`">
       <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
+      <template #headerAction>
+        <button
+          type="button"
+          @click="navigate('/planos')"
+          class="flex items-center gap-1 text-xs font-medium text-primary-text hover:underline"
+        >
+          Ver todos os planos <Icon name="arrowRight" class="h-3.5 w-3.5" />
+        </button>
+      </template>
       <ul class="flex flex-col gap-2">
         <li v-for="p in rascunhos" :key="p.id">
           <button

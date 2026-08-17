@@ -4,6 +4,7 @@ import { session } from "../stores/session";
 import Dashboard from "../pages/Dashboard.vue";
 import TreinoDetalhe from "../pages/TreinoDetalhe.vue";
 import EditorPlano from "../pages/EditorPlano.vue";
+import MeusPlanos from "../pages/MeusPlanos.vue";
 import AprovacaoPlanos from "../pages/AprovacaoPlanos.vue";
 import EditorSumula from "../pages/EditorSumula.vue";
 import RegistrarPartida from "../pages/RegistrarPartida.vue";
@@ -18,6 +19,7 @@ import Reforco from "../pages/Reforco.vue";
 const routes = [
   { path: "/", component: Dashboard },
   { path: "/treinos/:id", component: TreinoDetalhe },
+  { path: "/planos", component: MeusPlanos, meta: { roles: ["coach", "admin"] } },
   { path: "/planos/novo", component: EditorPlano, meta: { roles: ["coach", "admin"] } },
   { path: "/planos/aprovacao", component: AprovacaoPlanos, meta: { roles: ["admin"] } },
   { path: "/sumulas/novo", component: EditorSumula, meta: { roles: ["coach", "admin"] } },

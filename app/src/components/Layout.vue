@@ -40,7 +40,8 @@ function navItemsForRole(role) {
 function pageTitleForPath(pathname, role) {
   if (pathname === "/") return role === "responsavel" ? "Resumo" : "Dashboard";
   if (pathname.startsWith("/planos/aprovacao")) return "Aprovações";
-  if (pathname.startsWith("/planos")) return "Novo Plano";
+  if (pathname.startsWith("/planos/novo")) return "Novo Plano";
+  if (pathname === "/planos") return "Meus Planos";
   if (pathname.startsWith("/sumulas")) return "Nova Súmula";
   if (pathname.startsWith("/partidas")) return "Registrar Partida";
   if (pathname.startsWith("/execution")) return "Registrar Execução";

@@ -1,5 +1,6 @@
 import { reactive, watch } from "vue";
 import { planosPendentesIniciais, planosDisponiveisParaExecucao } from "../data/mockData";
+import { escopoContem } from "../data/users";
 
 const seedPlanos = [...planosPendentesIniciais, ...planosDisponiveisParaExecucao];
 
@@ -103,4 +104,28 @@ export function bulkApprove(ids, reviewer) {
 
 export function markExecuted(id) {
   planosStore.planos = planosStore.planos.map((p) => (p.id === id ? { ...p, status: "executed" } : p));
+}
+
+export function findPlano(id) {
+  return planosStore.planos.find((p) => p.id === id);
+}
+
+// Planos do escopo do usuário, do mais recente para o mais antigo — base das
+// telas "Meus Planos" e das ações de duplicar/reusar.
+export function planosDoUsuario(user) {
+  return planosStore.planos
+    .filter((p) => escopoContem(p, user))
+    .slice()
+    .sort((a, b) => (b.sessionDate ?? "").localeCompare(a.sessionDate ?? ""));
+}
+
+// Planos que fazem sentido reaproveitar como base (já aprovados ou executados).
+export function planosReutilizaveis(user) {
+  return planosDoUsuario(user).filter((p) => p.status === "approved" || p.status === "executed");
+}
+
+// Melhor sugestão de base: plano reutilizável mais recente da mesma
+// categoria+turma que o usuário está montando agora (auto-preenchimento).
+export function sugestaoBase(user, categoria, turma) {
+  return planosReutilizaveis(user).find((p) => p.categoria === categoria && p.turma === turma) ?? null;
 }

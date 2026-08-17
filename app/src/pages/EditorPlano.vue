@@ -17,7 +17,7 @@ import {
   inputErrorClass,
 } from "../components/ui";
 import Icon from "../components/Icon.vue";
-import { planosStore, addPlano, saveDraft, updatePlano } from "../stores/planos";
+import { planosStore, addPlano, saveDraft, updatePlano, findPlano, planosReutilizaveis, sugestaoBase } from "../stores/planos";
 import { usersStore } from "../stores/users";
 import { session } from "../stores/session";
 import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
@@ -73,10 +73,36 @@ function formatDateTime(iso) {
 const router = useRouter();
 const route = useRoute();
 
-// Reabertura de rascunho: ?draft=<id> carrega o plano salvo para edição.
+// Três modos de abrir o editor:
+//  ?draft=<id>  → edita o plano em questão no lugar (rascunho ou devolvido)
+//  ?base=<id>   → cria um plano NOVO já preenchido a partir de outro (duplicar)
+//  (sem query)  → plano novo em branco
 const editingId = computed(() => (typeof route.query.draft === "string" ? route.query.draft : null));
+const baseId = typeof route.query.base === "string" ? route.query.base : null;
 const draft = computed(() => (editingId.value ? planosStore.planos.find((p) => p.id === editingId.value) : undefined));
-const initialDraft = draft.value;
+// Duplicar = plano novo, sem editar o original.
+const duplicando = !editingId.value && !!baseId;
+const modoNovoEmBranco = !editingId.value && !baseId;
+// Fonte de pré-preenchimento (edição no lugar ou duplicação).
+const initialDraft = editingId.value ? draft.value : baseId ? findPlano(baseId) : undefined;
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}`;
+}
+
+// Plano devolvido pela coordenação sendo corrigido — mostra o comentário.
+const devolvido = computed(() =>
+  editingId.value && draft.value?.status === "changes_requested" ? draft.value : null,
+);
+
+const titulo = computed(() => {
+  if (devolvido.value) return "Corrigir Plano Devolvido";
+  if (editingId.value) return "Editar Rascunho de Plano";
+  if (duplicando) return "Novo Plano (a partir de um anterior)";
+  return "Criar Novo Plano de Aula";
+});
 
 const tab = ref(0);
 const status = ref(null);
@@ -85,8 +111,10 @@ const justSubmitted = ref(false);
 const errors = ref({});
 
 const defaultSession = defaultSessionDateTime();
-const data = ref(initialDraft?.sessionDate ?? defaultSession.date);
-const horario = ref(initialDraft?.horario ?? defaultSession.time);
+// Ao duplicar, a data/horário começam no padrão futuro (não herdam a data
+// antiga do plano-base); ao editar no lugar, herdam do próprio plano.
+const data = ref(duplicando ? defaultSession.date : initialDraft?.sessionDate ?? defaultSession.date);
+const horario = ref(duplicando ? defaultSession.time : initialDraft?.horario ?? defaultSession.time);
 const unidade = ref(initialDraft?.unidade ?? "Atibaia");
 const periodo = ref(initialDraft?.periodo ?? "Tarde");
 const semana = ref(initialDraft?.semana ?? "Semana 1");
@@ -159,6 +187,49 @@ function handleTemaChange(newTema) {
   const subtemas = temaOptions.value.find((t) => t.tema === newTema)?.subtemas ?? [];
   subtema.value = subtemas[0] ?? "";
   subTemas.value = [];
+}
+
+// --- "Começar mais rápido": reaproveitar um plano anterior (só em plano novo
+// em branco). `sugestao` é o plano reutilizável mais recente da mesma
+// categoria/turma escolhida; a lista completa fica no seletor.
+const mostrarBaseUI = ref(false);
+const baseAplicadoLabel = ref(null);
+const reutilizaveis = computed(() => planosReutilizaveis(session.user));
+const sugestao = computed(() =>
+  modoNovoEmBranco ? sugestaoBase(session.user, categoria.value, turma.value) : null,
+);
+
+function aplicarBase(src) {
+  if (!src) return;
+  periodo.value = src.periodo;
+  semana.value = src.semana;
+  categoria.value = src.categoria;
+  turma.value = src.turma;
+  coachName.value = src.coachName;
+  team.value = src.team;
+  fase.value = src.fase;
+  tema.value = src.tema;
+  subtema.value = src.subtema;
+  inicialObjetivo.value = src.etapaInicial.objetivo;
+  estacao1.value = { ...src.etapaInicial.estacao1 };
+  estacao2.value = { ...src.etapaInicial.estacao2 };
+  fundObjetivo.value = src.etapaFundamentacao.objetivo;
+  fundDuracao.value = src.etapaFundamentacao.duracaoMin;
+  fundTipo.value = src.etapaFundamentacao.tipo;
+  principalObjetivo.value = src.etapaPrincipal.objetivo;
+  principalDuracao.value = src.etapaPrincipal.duracaoMin;
+  subTemas.value = [...src.etapaPrincipal.subTemas];
+  orientacoes.value = [...src.etapaPrincipal.orientacoes];
+  hidratacao.value = src.etapaPrincipal.intervalo.hidratacaoMin;
+  repouso.value = src.etapaPrincipal.intervalo.repousoMin;
+  instruir.value = src.etapaPrincipal.intervalo.instruirMin;
+  ativar.value = src.etapaPrincipal.intervalo.ativarMin;
+  observacoes.value = src.observacoes;
+  errors.value = {};
+  baseAplicadoLabel.value = `${formatDate(src.sessionDate)} · ${src.categoria} · ${src.turma}`;
+  mostrarBaseUI.value = false;
+  statusIsError.value = false;
+  status.value = `Campos preenchidos a partir do plano de ${baseAplicadoLabel.value}. Ajuste a data e o que precisar.`;
 }
 
 function clearError(field) {
@@ -331,11 +402,92 @@ function onPrincipalDuracaoInput(e) {
 
 <template>
   <div class="flex flex-col gap-6">
-    <div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h1 class="font-heading text-xl font-semibold text-ink sm:text-2xl">
-        {{ editingId ? "Editar Rascunho de Plano" : "Criar Novo Plano de Aula" }}
+        {{ titulo }}
       </h1>
+      <router-link
+        to="/planos"
+        class="flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
+      >
+        <Icon name="clipboard" class="h-4 w-4" /> Meus planos
+      </router-link>
     </div>
+
+    <!-- Plano devolvido pela coordenação: mostra o que ajustar antes de reenviar. -->
+    <div
+      v-if="devolvido"
+      class="flex items-start gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 p-4"
+    >
+      <Icon name="alert" class="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+      <div class="min-w-0 text-sm">
+        <p class="font-semibold text-warning">Ajustes solicitados pela coordenação</p>
+        <p class="mt-0.5 text-ink">{{ devolvido.reviewComment }}</p>
+        <p v-if="devolvido.reviewedBy" class="mt-1 text-xs text-ink-muted">
+          {{ devolvido.reviewedBy }}{{ devolvido.reviewedAt ? ` · ${formatDateTime(devolvido.reviewedAt)}` : "" }} ·
+          corrija e submeta novamente.
+        </p>
+      </div>
+    </div>
+
+    <!-- Começar mais rápido: reaproveitar um plano anterior (só em plano novo). -->
+    <Card v-if="modoNovoEmBranco" title="Começar mais rápido">
+      <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>
+      <p v-if="baseAplicadoLabel" class="flex items-center gap-1.5 text-sm text-secondary">
+        <Icon name="check" class="h-4 w-4" /> Preenchido a partir do plano de {{ baseAplicadoLabel }}.
+      </p>
+      <template v-else>
+        <div
+          v-if="sugestao"
+          class="flex flex-col gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p class="text-sm text-ink-muted">
+            <Icon name="bot" class="mr-1 inline h-4 w-4 text-primary" />
+            Encontramos um plano recente de <span class="font-medium text-ink">{{ sugestao.categoria }} · {{ sugestao.turma }}</span>
+            ({{ formatDate(sugestao.sessionDate) }}) — quer usar como base?
+          </p>
+          <PrimaryButton variant="secondary" class="shrink-0" @click="aplicarBase(sugestao)">
+            <Icon name="clipboard" class="h-4 w-4" /> Usar como base
+          </PrimaryButton>
+        </div>
+        <p v-else class="text-sm text-ink-muted">
+          Comece do zero abaixo, ou reaproveite um plano já aprovado como ponto de partida.
+        </p>
+        <div v-if="reutilizaveis.length > 0" class="mt-3">
+          <button
+            type="button"
+            @click="mostrarBaseUI = !mostrarBaseUI"
+            :aria-expanded="mostrarBaseUI"
+            class="flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
+          >
+            <Icon name="chevronDown" :class="`h-4 w-4 transition-transform ${mostrarBaseUI ? 'rotate-180' : ''}`" />
+            Escolher outro plano como base ({{ reutilizaveis.length }})
+          </button>
+          <ul v-if="mostrarBaseUI" class="mt-2 flex flex-col gap-2">
+            <li v-for="p in reutilizaveis" :key="p.id">
+              <button
+                type="button"
+                @click="aplicarBase(p)"
+                class="flex w-full items-center gap-3 rounded-xl border border-line-soft bg-surface-2 p-3 text-left transition-colors hover:border-primary/40"
+              >
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Icon name="clipboard" class="h-4 w-4" />
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-semibold text-ink">
+                    {{ formatDate(p.sessionDate) }} · {{ p.categoria }} · {{ p.turma }}
+                  </span>
+                  <span class="block truncate text-xs text-ink-muted">{{ p.tema }} · {{ p.subtema }}</span>
+                </span>
+                <span class="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-text">
+                  Usar <Icon name="arrowRight" class="h-3.5 w-3.5" />
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </Card>
 
     <Card title="Dados da Sessão">
       <template #icon><Icon name="calendar" class="h-4 w-4" /></template>
