@@ -45,6 +45,28 @@ depois do treino, o registro do que de fato aconteceu — tempo executado por
 etapa comparado ao planejado, e os desvios relevantes registrados um a um.
 A execução só pode ser registrada sobre um plano já aprovado.
 
+### 3a. Registro de partida — jogo entre dois times
+`/partidas/nova` · perfis `coach`/`admin`
+
+Registro de uma **partida real** (distinto da súmula de treino acima),
+**adaptado ao modelo de referência `sumula.html`** e trazido para a
+identidade visual do dashboard:
+
+- Dois times (casa × visitante) com elenco próprio; placar/gols/cartões
+  opcionais.
+- Esquema de coletes configurável — **duas cores** (o número pode repetir
+  entre os times) ou **cor única** (número global) — com cor + rótulo por
+  time e faixa de numeração.
+- UUID por partida e por jogador, mais um índice `cv_index` com a chave
+  `(match_uuid · cor · número → player_uuid)` — pensado para uma futura
+  análise de vídeo reconhecer cada jogador em campo.
+- Exportação em JSON (schema normalizado `matches` / `players` /
+  `cv_index`), CSV e cópia de UUIDs; múltiplas partidas ficam salvas no
+  navegador.
+
+A súmula de treino (esfera 3) segue intacta — esta é uma tela separada,
+acessível pelo card "Registrar Partida" no Dashboard.
+
 ### 4. Indicadores e reforço — base estruturada para IA
 Card no Dashboard + `/reforco` · perfis `coach`/`admin`
 
