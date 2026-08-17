@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { ambiguousMatches } from "../data/mockData";
 import { findAtletaByMatricula } from "../data/atletas";
-import { Card, Field, PrimaryButton, RadioGroup, inputClass } from "../components/ui";
+import { Card, Field, PrimaryButton, RadioGroup, inputClass, inputErrorClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { CATEGORIAS, POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
 
@@ -53,31 +53,38 @@ const newMatricula = ref("");
 const newPosicao = ref("Goleiro");
 const newPosicaoOutro = ref("");
 const newStarter = ref(true);
-const error = ref(null);
+// Erros por campo (colete/nome) em vez de um bloco genérico embaixo do
+// mini-formulário — o treinador vê qual campo está errado no próprio campo.
+const jerseyError = ref(null);
+const nomeError = ref(null);
 const resolved = ref(false);
 const selections = ref({});
 const status = ref(null);
 
 function handleAdd() {
   const jerseyNum = Number(newJersey.value);
-  error.value = null;
+  jerseyError.value = null;
+  nomeError.value = null;
+  let ok = true;
 
-  if (!newJersey.value || !newNome.value.trim()) {
-    error.value = "Preencha número do colete e nome do atleta.";
-    return;
+  if (!newJersey.value) {
+    jerseyError.value = "Informe o número do colete.";
+    ok = false;
+  } else if (jerseyNum < 1 || jerseyNum > 99) {
+    jerseyError.value = "Número deve estar entre 1 e 99.";
+    ok = false;
+  } else if (BLOCKED_JERSEYS.includes(jerseyNum)) {
+    jerseyError.value = `Colete ${jerseyNum} está reservado — escolha outro número.`;
+    ok = false;
+  } else if (roster.value.some((r) => r.jersey === jerseyNum)) {
+    jerseyError.value = `Colete ${jerseyNum} já está em uso na escalação.`;
+    ok = false;
   }
-  if (jerseyNum < 1 || jerseyNum > 99) {
-    error.value = "Número do colete deve estar entre 1 e 99.";
-    return;
+  if (!newNome.value.trim()) {
+    nomeError.value = "Informe o nome do atleta.";
+    ok = false;
   }
-  if (BLOCKED_JERSEYS.includes(jerseyNum)) {
-    error.value = `Número do colete ${jerseyNum} está bloqueado para uso.`;
-    return;
-  }
-  if (roster.value.some((r) => r.jersey === jerseyNum)) {
-    error.value = `Número do colete ${jerseyNum} já está em uso.`;
-    return;
-  }
+  if (!ok) return;
 
   const posicao = newPosicao.value === "Outro" ? newPosicaoOutro.value.trim() || "—" : newPosicao.value;
   const matricula = newMatricula.value.trim();
@@ -158,18 +165,22 @@ function pickSelection(jersey, id) {
 
     <Card title="Adicionar Atleta">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[104px_1fr_130px_150px_92px_auto] lg:items-end">
-        <Field label="Número do Colete">
+        <Field label="Número do Colete" required :error="jerseyError">
           <input
             type="number"
             :min="1"
             :max="99"
-            :class="inputClass"
+            :class="jerseyError ? inputErrorClass : inputClass"
             :value="newJersey"
-            @input="newJersey = $event.target.value"
+            @input="newJersey = $event.target.value; jerseyError = null"
           />
         </Field>
-        <Field label="Nome">
-          <input :class="inputClass" :value="newNome" @input="newNome = $event.target.value" />
+        <Field label="Nome" required :error="nomeError">
+          <input
+            :class="nomeError ? inputErrorClass : inputClass"
+            :value="newNome"
+            @input="newNome = $event.target.value; nomeError = null"
+          />
         </Field>
         <Field label="Matrícula" hint="Sem matrícula, passa por Resolver Nomes.">
           <input :class="inputClass" :value="newMatricula" @input="newMatricula = $event.target.value" />
@@ -203,9 +214,6 @@ function pickSelection(jersey, id) {
           />
         </Field>
       </div>
-      <p v-if="error" role="alert" class="flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary-text">
-        <Icon name="alert" class="h-4 w-4" /> {{ error }}
-      </p>
     </Card>
 
     <Card :title="`Escalação (${roster.length} atletas)`">

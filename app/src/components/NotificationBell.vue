@@ -103,10 +103,13 @@ function handleClick(id, to) {
                 <span class="mt-0.5 block text-xs text-ink-muted">{{ n.detail }}</span>
               </span>
             </button>
-            <div
+            <button
               v-else
+              type="button"
               @click="handleClick(n.id)"
-              :class="`flex cursor-default items-start gap-3 px-4 py-3 ${!read.has(n.id) ? 'bg-primary/5' : ''}`"
+              :class="`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2 ${
+                !read.has(n.id) ? 'bg-primary/5' : ''
+              }`"
             >
               <span
                 :class="`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${toneClasses[n.tone]}`"
@@ -120,7 +123,7 @@ function handleClick(id, to) {
                 </span>
                 <span class="mt-0.5 block text-xs text-ink-muted">{{ n.detail }}</span>
               </span>
-            </div>
+            </button>
           </li>
         </ul>
       </div>

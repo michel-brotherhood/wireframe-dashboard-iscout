@@ -4,7 +4,7 @@ let novoPlanoSeq = 1;
 </script>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, nextTick } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   Card,
@@ -26,6 +26,34 @@ import EstacaoForm from "./_EstacaoForm.vue";
 import DiagramUpload from "./_DiagramUpload.vue";
 
 const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"];
+const TIPOS_EXERCICIO = ["Analítico", "Global", "Situacional"];
+
+// Após um erro de validação, leva o foco ao primeiro campo destacado (borda
+// de erro) — sem isso, quem navega por teclado/leitor de tela não sabe para
+// onde ir depois da mensagem de status.
+function focusFirstError() {
+  nextTick(() => {
+    const el = document.querySelector(".border-primary-text");
+    if (el && typeof el.focus === "function") el.focus();
+  });
+}
+
+// Navegação por seta entre as abas (padrão ARIA tabs: roving tabindex).
+function focusTab(i) {
+  nextTick(() => document.getElementById(`plano-tab-${i}`)?.focus());
+}
+function onTabsKeydown(e) {
+  const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+  if (!keys.includes(e.key)) return;
+  e.preventDefault();
+  let next = tab.value;
+  if (e.key === "ArrowRight") next = (tab.value + 1) % TABS.length;
+  else if (e.key === "ArrowLeft") next = (tab.value - 1 + TABS.length) % TABS.length;
+  else if (e.key === "Home") next = 0;
+  else if (e.key === "End") next = TABS.length - 1;
+  tab.value = next;
+  focusTab(next);
+}
 
 // Treinador Responsável = quem tem turma própria (coachName) — independe do
 // papel (coach/admin): um admin com turma própria (ex.: Gerson) também entra.
@@ -179,6 +207,7 @@ function goToNext(nextTab) {
   const tabErrors = validateTab(tab.value);
   if (Object.keys(tabErrors).length > 0) {
     errors.value = { ...errors.value, ...tabErrors };
+    focusFirstError();
     return;
   }
   tab.value = nextTab;
@@ -238,6 +267,7 @@ function handleSubmit() {
     statusIsError.value = true;
     justSubmitted.value = false;
     status.value = "Corrija os campos obrigatórios destacados antes de submeter.";
+    focusFirstError();
     return;
   }
   if (total.value < 30 || total.value > 120) {
@@ -397,13 +427,21 @@ function onPrincipalDuracaoInput(e) {
       </div>
     </Card>
 
-    <div role="tablist" aria-label="Etapas do plano" class="flex flex-wrap gap-1 rounded-2xl border border-line bg-surface p-1">
+    <div
+      role="tablist"
+      aria-label="Etapas do plano"
+      class="flex flex-wrap gap-1 rounded-2xl border border-line bg-surface p-1"
+      @keydown="onTabsKeydown"
+    >
       <button
         v-for="(t, i) in TABS"
         :key="t"
+        :id="`plano-tab-${i}`"
         role="tab"
         type="button"
         :aria-selected="tab === i"
+        :aria-controls="`plano-panel-${i}`"
+        :tabindex="tab === i ? 0 : -1"
         @click="tab = i"
         :class="`flex-1 min-w-[120px] rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
           tab === i ? 'bg-primary-hover text-white' : 'text-ink-muted hover:bg-surface-2 hover:text-ink'
@@ -433,7 +471,13 @@ function onPrincipalDuracaoInput(e) {
       </button>
     </p>
 
-    <Card v-if="tab === 0" title="Aba 1 · Etapa Inicial (Aquecimento)">
+    <Card
+      v-if="tab === 0"
+      title="Aba 1 · Etapa Inicial (Aquecimento)"
+      role="tabpanel"
+      id="plano-panel-0"
+      aria-labelledby="plano-tab-0"
+    >
       <Field label="Objetivo" required :error="errors.inicialObjetivo">
         <RadioGroup :options="OBJETIVOS" :model-value="inicialObjetivo" @update:model-value="onInicialObjetivo" allow-other />
       </Field>
@@ -449,7 +493,13 @@ function onPrincipalDuracaoInput(e) {
       </div>
     </Card>
 
-    <Card v-if="tab === 1" title="Aba 2 · Etapa de Fundamentação">
+    <Card
+      v-if="tab === 1"
+      title="Aba 2 · Etapa de Fundamentação"
+      role="tabpanel"
+      id="plano-panel-1"
+      aria-labelledby="plano-tab-1"
+    >
       <Field label="Objetivo" required :error="errors.fundObjetivo">
         <RadioGroup :options="OBJETIVOS" :model-value="fundObjetivo" @update:model-value="onFundObjetivo" allow-other />
       </Field>
@@ -462,21 +512,9 @@ function onPrincipalDuracaoInput(e) {
           @input="onFundDuracaoInput"
         />
       </Field>
-      <fieldset class="mb-4">
-        <legend class="mb-1 text-sm font-medium text-ink-muted">Tipo de Exercício *</legend>
-        <div class="flex flex-wrap gap-4">
-          <label v-for="opt in ['Analítico', 'Global', 'Situacional']" :key="opt" class="flex items-center gap-2 text-sm text-ink">
-            <input
-              type="radio"
-              name="tipo-exercicio"
-              class="h-4 w-4 border-line bg-surface-2 text-primary focus:ring-primary"
-              :checked="fundTipo === opt"
-              @change="fundTipo = opt"
-            />
-            {{ opt }}
-          </label>
-        </div>
-      </fieldset>
+      <Field label="Tipo de Exercício" required>
+        <RadioGroup :options="TIPOS_EXERCICIO" v-model="fundTipo" />
+      </Field>
       <p class="mb-4 text-sm text-ink-muted">
         Tema e subtema desta sessão são definidos no cabeçalho ({{ tema }} · {{ subtema }}).
       </p>
@@ -491,7 +529,13 @@ function onPrincipalDuracaoInput(e) {
       </div>
     </Card>
 
-    <Card v-if="tab === 2" title="Aba 3 · Etapa Principal">
+    <Card
+      v-if="tab === 2"
+      title="Aba 3 · Etapa Principal"
+      role="tabpanel"
+      id="plano-panel-2"
+      aria-labelledby="plano-tab-2"
+    >
       <Field label="Objetivo" required :error="errors.principalObjetivo">
         <RadioGroup :options="OBJETIVOS" :model-value="principalObjetivo" @update:model-value="onPrincipalObjetivo" allow-other />
       </Field>
@@ -549,7 +593,13 @@ function onPrincipalDuracaoInput(e) {
       </div>
     </Card>
 
-    <Card v-if="tab === 3" title="Aba 4 · Observações">
+    <Card
+      v-if="tab === 3"
+      title="Aba 4 · Observações"
+      role="tabpanel"
+      id="plano-panel-3"
+      aria-labelledby="plano-tab-3"
+    >
       <Field label="Observações Gerais">
         <textarea :class="`${inputClass} min-h-[120px]`" v-model="observacoes" />
       </Field>

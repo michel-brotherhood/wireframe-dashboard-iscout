@@ -272,7 +272,7 @@ function onCommentInput(e) {
                   </p>
                   <StatusBadge :status="p.status" />
                 </div>
-                <p class="text-sm text-ink-muted [&>span]:whitespace-nowrap">
+                <p class="text-sm text-ink-muted break-words">
                   <span>{{ p.unidade }}</span> · <span>Treinador: {{ p.coachName }}</span> · <span>{{ p.periodo }}</span> ·
                   <span>{{ p.semana }}</span> · <span>Total Planejado: {{ totalPlanejado(p) }} min</span>
                 </p>
