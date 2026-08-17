@@ -201,11 +201,22 @@ function confirmarExecucao() {
         </div>
       </Card>
 
+      <!-- Consequências mostradas ANTES de confirmar — é um aviso do que a ação
+           irreversível vai provocar, não um recibo pós-fato. -->
+      <Card :title="confirmed ? 'Execução confirmada' : 'Ao confirmar'">
+        <template #icon><Icon :name="confirmed ? 'check' : 'alert'" :class="`h-4 w-4 ${confirmed ? 'text-secondary' : 'text-warning'}`" /></template>
+        <ul class="flex flex-col gap-1 text-sm text-ink-muted">
+          <li>• Registro de Execução fica confirmado</li>
+          <li>• Plano marcado como Executado</li>
+          <li>• Avaliação pendente de metodologia definida pela coordenação pedagógica</li>
+        </ul>
+      </Card>
+
       <div class="flex flex-wrap gap-2">
         <PrimaryButton variant="secondary" @click="status = 'Execução salva como rascunho.'">
           Salvar como Rascunho
         </PrimaryButton>
-        <PrimaryButton @click="confirmarExecucao">
+        <PrimaryButton :disabled="confirmed" @click="confirmarExecucao">
           Confirmar Execução
         </PrimaryButton>
       </div>
@@ -213,15 +224,6 @@ function confirmarExecucao() {
       <p v-if="status" role="status" class="flex items-center gap-1.5 rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-sm text-secondary">
         <Icon name="check" class="h-4 w-4" /> {{ status }}
       </p>
-
-      <Card v-if="confirmed" title="Ao confirmar">
-        <template #icon><Icon name="alert" class="h-4 w-4 text-warning" /></template>
-        <ul class="flex flex-col gap-1 text-sm text-ink-muted">
-          <li>• Registro de Execução fica confirmado</li>
-          <li>• Plano marcado como Executado</li>
-          <li>• Avaliação pendente de metodologia definida pela coordenação pedagógica</li>
-        </ul>
-      </Card>
     </template>
   </div>
 </template>

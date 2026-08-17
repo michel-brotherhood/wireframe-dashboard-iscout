@@ -363,7 +363,7 @@ function onTreinoKey(e, id) {
           data-testid="treino-card"
           @click="navigate(`/treinos/${t.id}`)"
           tabindex="0"
-          role="link"
+          role="button"
           :aria-label="`Ver detalhes do treino de ${formatDate(t.sessionDate)}`"
           @keydown="onTreinoKey($event, t.id)"
           class="cursor-pointer rounded-xl border border-line-soft bg-surface-2 p-3 outline-none hover:border-primary/40 focus-visible:bg-primary/10"
@@ -407,7 +407,7 @@ function onTreinoKey(e, id) {
               :key="t.id"
               @click="navigate(`/treinos/${t.id}`)"
               tabindex="0"
-              role="link"
+              role="button"
               :aria-label="`Ver detalhes do treino de ${formatDate(t.sessionDate)}`"
               @keydown="onTreinoKey($event, t.id)"
               :class="`group cursor-pointer border-b border-line-soft last:border-0 outline-none hover:bg-primary/5 focus-visible:bg-primary/10 ${
