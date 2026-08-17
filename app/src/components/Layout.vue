@@ -43,6 +43,7 @@ function pageTitleForPath(pathname, role) {
   if (pathname.startsWith("/planos/aprovacao")) return "Aprovações";
   if (pathname.startsWith("/planos")) return "Novo Plano";
   if (pathname.startsWith("/sumulas")) return "Nova Súmula";
+  if (pathname.startsWith("/partidas")) return "Registrar Partida";
   if (pathname.startsWith("/execution")) return "Registrar Execução";
   if (pathname.startsWith("/treinos")) return "Detalhe do Treino";
   if (pathname.startsWith("/configuracoes")) return "Gestão de Acessos";

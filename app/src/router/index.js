@@ -6,6 +6,7 @@ import TreinoDetalhe from "../pages/TreinoDetalhe.vue";
 import EditorPlano from "../pages/EditorPlano.vue";
 import AprovacaoPlanos from "../pages/AprovacaoPlanos.vue";
 import EditorSumula from "../pages/EditorSumula.vue";
+import RegistrarPartida from "../pages/RegistrarPartida.vue";
 import EditorExecutionLog from "../pages/EditorExecutionLog.vue";
 import Arquitetura from "../pages/Arquitetura.vue";
 import Configuracoes from "../pages/Configuracoes.vue";
@@ -20,6 +21,7 @@ const routes = [
   { path: "/planos/novo", component: EditorPlano, meta: { roles: ["coach", "admin"] } },
   { path: "/planos/aprovacao", component: AprovacaoPlanos, meta: { roles: ["admin"] } },
   { path: "/sumulas/novo", component: EditorSumula, meta: { roles: ["coach", "admin"] } },
+  { path: "/partidas/nova", component: RegistrarPartida, meta: { roles: ["coach", "admin"] } },
   { path: "/execution/novo", component: EditorExecutionLog, meta: { roles: ["coach", "admin"] } },
   { path: "/reforco", component: Reforco, meta: { roles: ["coach", "admin"] } },
   { path: "/arquitetura", component: Arquitetura },
