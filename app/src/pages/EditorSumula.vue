@@ -164,8 +164,8 @@ function pickSelection(jersey, id) {
     </Card>
 
     <Card title="Adicionar Atleta">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[104px_1fr_130px_150px_92px_auto] lg:items-end">
-        <Field label="Número do Colete" required :error="jerseyError">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[120px_minmax(0,1fr)_150px_150px_88px_auto] lg:items-end">
+        <Field label="Nº do Colete" required :error="jerseyError">
           <input
             type="number"
             :min="1"
