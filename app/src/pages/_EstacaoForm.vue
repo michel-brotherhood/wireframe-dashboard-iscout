@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { Field, CheckboxGroup, inputClass } from "../components/ui";
 import { MATERIAIS } from "../data/planoOptions";
-import DiagramUpload from "./_DiagramUpload.vue";
+import PranchetaTatica from "./_PranchetaTatica.vue";
 
 const TIPOS_ESTACAO = ["Simples", "Com bola", "Recreativo"];
 
@@ -49,7 +49,7 @@ const materiais = computed({
       <CheckboxGroup :options="MATERIAIS" v-model="materiais" allow-other other-placeholder="Outros materiais" />
     </Field>
     <div class="mt-4">
-      <DiagramUpload />
+      <PranchetaTatica editavel />
     </div>
   </div>
 </template>

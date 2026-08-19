@@ -23,7 +23,7 @@ import { session } from "../stores/session";
 import { calcDeadline, defaultSessionDateTime, diaDaSemana, FASE_TEMAS, getNow, prazoLabel } from "../data/mockData";
 import { CATEGORIAS, MATERIAIS, OBJETIVOS, ORIENTACOES } from "../data/planoOptions";
 import EstacaoForm from "./_EstacaoForm.vue";
-import DiagramUpload from "./_DiagramUpload.vue";
+import PranchetaTatica from "./_PranchetaTatica.vue";
 
 const TABS = ["1. Inicial", "2. Fundamentação", "3. Principal", "4. Observações"];
 const TIPOS_EXERCICIO = ["Analítico", "Global", "Situacional"];
@@ -670,7 +670,7 @@ function onPrincipalDuracaoInput(e) {
       <p class="mb-4 text-sm text-ink-muted">
         Tema e subtema desta sessão são definidos no cabeçalho ({{ tema }} · {{ subtema }}).
       </p>
-      <DiagramUpload />
+      <PranchetaTatica editavel />
       <div class="flex justify-between">
         <PrimaryButton variant="secondary" @click="tab = 0">
           <Icon name="arrowLeft" class="h-4 w-4" /> Anterior
@@ -734,7 +734,7 @@ function onPrincipalDuracaoInput(e) {
         </div>
       </div>
 
-      <DiagramUpload />
+      <PranchetaTatica editavel />
       <div class="flex justify-between">
         <PrimaryButton variant="secondary" @click="tab = 1">
           <Icon name="arrowLeft" class="h-4 w-4" /> Anterior
