@@ -1,8 +1,10 @@
 export { default as IntervaloFlow } from "./ui/IntervaloFlow.vue";
+export { default as CicloAula } from "./ui/CicloAula.vue";
 export { default as Tooltip } from "./ui/Tooltip.vue";
 export { default as Card } from "./ui/Card.vue";
 export { default as StatusBadge } from "./ui/StatusBadge.vue";
 export { default as TeamBadge } from "./ui/TeamBadge.vue";
+export { default as SumulaTabela } from "./ui/SumulaTabela.vue";
 export { default as ProgressBar } from "./ui/ProgressBar.vue";
 export { default as PrimaryButton } from "./ui/PrimaryButton.vue";
 export { default as Field } from "./ui/Field.vue";

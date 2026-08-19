@@ -2,7 +2,8 @@
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { treinos } from "../data/mockData";
-import { Card, IntervaloFlow, StatusBadge, PrimaryButton, TeamBadge } from "../components/ui";
+import { cicloDaAula } from "../data/ciclo";
+import { Card, IntervaloFlow, StatusBadge, PrimaryButton, CicloAula, SumulaTabela } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { session } from "../stores/session";
 
@@ -44,6 +45,15 @@ const totalPlanejado = computed(
 );
 
 const sessionDateShort = computed(() => plano.value.sessionDate.split("-").reverse().slice(0, 2).join("/"));
+
+// Ciclo da aula (Plano→Captura→Súmula→Execução→Vídeos→Análise) — mock visual.
+const ciclo = computed(() => cicloDaAula(treino.value));
+
+// Data da súmula formatada dd/mm/aaaa para o cabeçalho no formato do modelo.
+const sumulaData = computed(() => {
+  const d = sumula.value?.sessionDate;
+  return d ? d.split("-").reverse().join("/") : "";
+});
 
 // BR-02: o callout de "ajustes solicitados" citava a etapa em texto livre sem
 // marcar o campo alvo — heurística simples de palavra-chave para destacar
@@ -116,9 +126,12 @@ async function handleShare() {
         </router-link>
         <div>
           <h1 class="font-heading text-lg font-semibold text-ink sm:text-xl">
-            Treino: {{ sessionDateShort }} · {{ treino.categoria }} ·
-            {{ treino.turma }} · {{ treino.coachName }}
+            {{ treino.categoria }} · {{ treino.campo || treino.turma }}
           </h1>
+          <p class="mt-0.5 text-sm text-ink-muted">
+            {{ sessionDateShort }}<span v-if="plano.horario"> · {{ plano.horario }}</span> ·
+            {{ treino.turma }} · {{ treino.coachName }}
+          </p>
         </div>
       </div>
       <div v-if="canEdit" class="flex flex-wrap gap-2">
@@ -141,6 +154,15 @@ async function handleShare() {
     >
       <Icon name="check" class="h-4 w-4" /> {{ status }}
     </p>
+
+    <!-- Ciclo da aula (acompanhamento visual do treino) -->
+    <Card title="Ciclo da aula">
+      <template #icon><Icon name="lineChart" class="h-4 w-4" /></template>
+      <CicloAula :etapas="ciclo" />
+      <p class="mt-3 text-xs text-ink-muted">
+        Captura e análise são etapas futuras (câmeras + vídeo) — aqui aparecem só como acompanhamento.
+      </p>
+    </Card>
 
     <!-- Seção 1: Plano -->
     <Card title="Seção 1 · Plano de Aula">
@@ -224,70 +246,24 @@ async function handleShare() {
       <p class="mt-3 text-sm font-semibold text-ink">Total Planejado: {{ totalPlanejado }} minutos</p>
     </Card>
 
-    <!-- Seção 2: Súmula -->
+    <!-- Seção 2: Súmula (formato do modelo — 1 súmula = 1 campo) -->
     <Card title="Seção 2 · Súmula">
       <template #icon><Icon name="ball" class="h-4 w-4" /></template>
       <template v-if="canEdit" #headerAction>
-        <PrimaryButton variant="secondary" @click="router.push('/sumulas/novo')">
+        <PrimaryButton variant="secondary" @click="router.push(`/sumulas/novo?treino=${treino.id}`)">
           <Icon name="edit" class="h-4 w-4" /> Editar Escalação
         </PrimaryButton>
       </template>
       <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
         <StatusBadge :status="sumula.status" />
-        <TeamBadge :team="sumula.team" />
         <span v-if="sumula.confirmedAt" class="text-ink-muted">{{ formatDateTime(sumula.confirmedAt) }}</span>
-        <span class="ml-auto text-ink-muted">Escalação: {{ sumula.entries.length }} atletas</span>
       </div>
-      <!-- Mobile (<640px): lista de cards em vez da tabela min-w-[480px]. -->
-      <ul class="flex flex-col gap-2 sm:hidden">
-        <li
-          v-for="e in sumula.entries"
-          :key="e.jersey"
-          data-testid="sumula-entry-card"
-          class="rounded-xl border border-line-soft bg-surface-2 p-3 text-sm"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <p class="font-semibold text-ink">
-              Colete {{ e.jersey }} — {{ e.nome }}
-            </p>
-            <span class="shrink-0 text-secondary" :aria-label="e.starter ? 'Titular' : 'Reserva'">
-              <Icon v-if="e.starter" name="check" class="h-4 w-4" />
-              <span v-else class="text-ink-muted">—</span>
-            </span>
-          </div>
-          <p class="mt-1 text-ink-muted">Posição: {{ e.posicao }}</p>
-        </li>
-      </ul>
-
-      <!-- Tablet/desktop (≥640px): tabela completa, scroll horizontal contido. -->
-      <div class="hidden overflow-x-auto overscroll-x-contain sm:block">
-        <table class="w-full min-w-[480px] border-collapse text-sm">
-          <thead>
-            <tr class="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              <th scope="col" class="px-3 py-2">Número do Colete</th>
-              <th scope="col" class="px-3 py-2">Nome</th>
-              <th scope="col" class="px-3 py-2">Posição</th>
-              <th scope="col" class="px-3 py-2">Titular</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(e, i) in sumula.entries"
-              :key="e.jersey"
-              class="border-b border-line-soft last:border-0"
-              :class="i % 2 === 1 ? 'bg-surface-2/40' : ''"
-            >
-              <td class="px-3 py-2 font-medium text-ink">{{ e.jersey }}</td>
-              <td class="px-3 py-2 text-ink-muted">{{ e.nome }}</td>
-              <td class="px-3 py-2 text-ink-muted">{{ e.posicao }}</td>
-              <td class="px-3 py-2 text-secondary" :aria-label="e.starter ? 'Titular' : 'Reserva'">
-                <Icon v-if="e.starter" name="check" class="h-4 w-4" />
-                <template v-else>—</template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <SumulaTabela
+        :entries="sumula.entries"
+        :campo="sumula.campo || treino.campo"
+        :categoria="treino.categoria"
+        :data="sumulaData"
+      />
     </Card>
 
     <!-- Seção 3: Registro de Execução -->
@@ -333,6 +309,34 @@ async function handleShare() {
     <Card v-else title="Seção 3 · Registro de Execução">
       <template #icon><Icon name="barChart" class="h-4 w-4" /></template>
       <p class="text-sm text-ink-muted">Execução ainda não registrada para este treino.</p>
+      <div v-if="canEdit" class="mt-3">
+        <PrimaryButton @click="router.push(`/execution/novo?treino=${treino.id}`)">
+          <Icon name="barChart" class="h-4 w-4" /> Registrar Execução
+        </PrimaryButton>
+      </div>
+    </Card>
+
+    <!-- Fechamento da aula (mock): súmula + devolutiva → validação da coordenação -->
+    <Card v-if="canEdit" title="Fechamento da aula">
+      <template #icon><Icon name="stamp" class="h-4 w-4" /></template>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <span class="flex items-center gap-1.5">
+            Súmula <StatusBadge :status="sumula.status" />
+          </span>
+          <span class="flex items-center gap-1.5">
+            Devolutiva <StatusBadge :status="executionLog ? executionLog.status : 'aguardando'" />
+          </span>
+        </div>
+        <PrimaryButton
+          @click="status = 'Fechamento enviado para validação da coordenação (protótipo).'"
+        >
+          <Icon name="upload" class="h-4 w-4" /> Enviar para validação
+        </PrimaryButton>
+      </div>
+      <p class="mt-2 text-xs text-ink-muted">
+        Quando aprovado pela coordenação, súmula + vídeos seguem para a análise. (Fluxo representado — sem envio real.)
+      </p>
     </Card>
 
     <!-- Seção 4: Avaliação -->

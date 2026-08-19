@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed } from "vue";
-import { ambiguousMatches } from "../data/mockData";
+import { useRoute } from "vue-router";
+import { ambiguousMatches, treinos } from "../data/mockData";
 import { findAtletaByMatricula } from "../data/atletas";
-import { Card, Field, PrimaryButton, RadioGroup, inputClass, inputErrorClass } from "../components/ui";
+import { Card, Field, PrimaryButton, RadioGroup, TeamBadge, inputClass, inputErrorClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { CATEGORIAS, POSICOES, SESSAO_OPCOES } from "../data/planoOptions";
 
@@ -21,24 +22,42 @@ function resolutionStatus(row, selections) {
 }
 
 // `atletaId` resolvido pela matrícula contra o registro único (data/atletas.js).
+// `time` = cor do colete por atleta (dois times no mesmo campo — formato da 2ª
+// aba do modelo).
 const initialRoster = [
-  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", matricula: "1001", starter: true },
-  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true },
-  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", matricula: "1003", starter: true },
-  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", matricula: "1004", starter: true },
-  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", matricula: "1005", starter: true },
-  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", matricula: "1006", starter: true },
-  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", matricula: "1007", starter: true },
-  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", matricula: "1008", starter: true },
-  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", matricula: "1009", starter: true },
-  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", matricula: "1010", starter: true },
-  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", matricula: "1011", starter: true },
+  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", matricula: "1001", starter: true, time: "Amarelo" },
+  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", matricula: "1002", starter: true, time: "Amarelo" },
+  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", matricula: "1003", starter: true, time: "Amarelo" },
+  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", matricula: "1004", starter: true, time: "Amarelo" },
+  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", matricula: "1005", starter: true, time: "Amarelo" },
+  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", matricula: "1006", starter: true, time: "Amarelo" },
+  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", matricula: "1007", starter: true, time: "Azul" },
+  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", matricula: "1008", starter: true, time: "Azul" },
+  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", matricula: "1009", starter: true, time: "Azul" },
+  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", matricula: "1010", starter: true, time: "Azul" },
+  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", matricula: "1011", starter: true, time: "Azul" },
 ].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
 
+const route = useRoute();
 const data = ref("2026-07-02");
 const categoria = ref("Sub-15");
+const campo = ref("Campo Oficial 5");
 const corColete = ref("Amarelo");
 const sessao = ref("Sessão 1 - Campo 2");
+
+// Contexto da aula: quando chega por Detalhe do Treino (?treino=<id>), pré-
+// preenche campo/categoria/data a partir do treino — a súmula "pertence" àquela
+// aula, não é criada solta (briefing §13).
+const treinoContexto = computed(() =>
+  typeof route.query.treino === "string" ? treinos.find((t) => t.id === route.query.treino) : null,
+);
+if (treinoContexto.value) {
+  const t = treinoContexto.value;
+  data.value = t.sessionDate;
+  categoria.value = t.categoria;
+  campo.value = t.campo || campo.value;
+  corColete.value = t.team || corColete.value;
+}
 
 // Cabeçalho reflete a data escolhida (antes era um literal fixo, ignorando o
 // campo). ISO (yyyy-mm-dd) → dd/mm/yyyy sem depender de fuso do Date.
@@ -53,6 +72,9 @@ const newMatricula = ref("");
 const newPosicao = ref("Goleiro");
 const newPosicaoOutro = ref("");
 const newStarter = ref(true);
+// Time padrão do próximo atleta segue a cor padrão do colete (já pré-preenchida
+// pelo contexto do treino, se houver).
+const newTime = ref(corColete.value);
 // Erros por campo (colete/nome) em vez de um bloco genérico embaixo do
 // mini-formulário — o treinador vê qual campo está errado no próprio campo.
 const jerseyError = ref(null);
@@ -90,7 +112,7 @@ function handleAdd() {
   const matricula = newMatricula.value.trim();
   roster.value = [
     ...roster.value,
-    { jersey: jerseyNum, nome: newNome.value.trim(), posicao, matricula, starter: newStarter.value, atletaId: findAtletaByMatricula(matricula)?.id },
+    { jersey: jerseyNum, nome: newNome.value.trim(), posicao, matricula, starter: newStarter.value, time: newTime.value, atletaId: findAtletaByMatricula(matricula)?.id },
   ];
   newJersey.value = "";
   newNome.value = "";
@@ -121,7 +143,7 @@ const canConfirm = computed(
 const resolvedCount = computed(() => statuses.value.filter((s) => s.status === "resolved").length);
 
 function confirmarEscalacao() {
-  status.value = `Escalação confirmada e projetada — ${dataFormatada.value} · ${categoria.value} · Colete ${corColete.value} · ${roster.value.length} atletas.`;
+  status.value = `Súmula confirmada — ${campo.value} · ${categoria.value} · ${dataFormatada.value} · ${roster.value.length} atletas.`;
 }
 
 function matchFor(nome) {
@@ -136,20 +158,26 @@ function pickSelection(jersey, id) {
 <template>
   <div class="flex flex-col gap-6">
     <h1 class="font-heading text-xl font-semibold text-ink sm:text-2xl">
-      Criar Súmula — {{ dataFormatada }} — {{ categoria }}
+      Criar Súmula — {{ campo }} · {{ categoria }}
     </h1>
+    <p v-if="treinoContexto" class="-mt-4 flex items-center gap-1.5 text-sm text-ink-muted">
+      <Icon name="ball" class="h-4 w-4 text-primary" /> Súmula da aula de {{ dataFormatada }} — 1 súmula = 1 campo.
+    </p>
 
     <Card>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Field label="Data" required>
-          <input type="date" :class="inputClass" v-model="data" />
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="Campo" required hint="1 súmula = 1 campo">
+          <input :class="inputClass" v-model="campo" placeholder="Ex.: Campo Oficial 5" />
         </Field>
         <Field label="Categoria" required>
           <select :class="inputClass" v-model="categoria">
             <option v-for="c in CATEGORIAS" :key="c">{{ c }}</option>
           </select>
         </Field>
-        <Field label="Cor do Colete" required>
+        <Field label="Data" required>
+          <input type="date" :class="inputClass" v-model="data" />
+        </Field>
+        <Field label="Cor padrão do colete" hint="Aplicada a novos atletas">
           <select :class="inputClass" v-model="corColete">
             <option>Amarelo</option>
             <option>Azul</option>
@@ -164,7 +192,7 @@ function pickSelection(jersey, id) {
     </Card>
 
     <Card title="Adicionar Atleta">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[120px_minmax(0,1fr)_150px_150px_88px_auto] lg:items-end">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[104px_minmax(0,1fr)_130px_130px_120px_80px_auto] lg:items-end">
         <Field label="Nº do Colete" required :error="jerseyError">
           <input
             type="number"
@@ -189,6 +217,12 @@ function pickSelection(jersey, id) {
           <select :class="inputClass" :value="newPosicao" @change="newPosicao = $event.target.value">
             <option v-for="p in POSICOES" :key="p">{{ p }}</option>
             <option>Outro</option>
+          </select>
+        </Field>
+        <Field label="Time">
+          <select :class="inputClass" v-model="newTime">
+            <option>Amarelo</option>
+            <option>Azul</option>
           </select>
         </Field>
         <label class="mb-4 flex items-center gap-2 text-sm text-ink lg:mb-[13px]">
@@ -224,10 +258,10 @@ function pickSelection(jersey, id) {
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <p class="text-sm font-semibold text-ink">
-                Colete {{ r.jersey }} — {{ r.nome }}
+                Camisa {{ r.jersey }} — {{ r.nome }}
               </p>
               <p class="mt-1 text-sm text-ink-muted">Posição: {{ r.posicao }}</p>
-              <p class="text-sm text-ink-muted">Matrícula: {{ r.matricula || "—" }}</p>
+              <p class="mt-1"><TeamBadge v-if="r.time" :team="r.time" /></p>
               <p class="flex items-center gap-1 text-sm text-secondary">
                 <template v-if="r.starter">
                   <Icon name="check" class="h-4 w-4" /> Titular
@@ -252,9 +286,10 @@ function pickSelection(jersey, id) {
         <table class="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr class="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              <th scope="col" class="px-3 py-2">Número do Colete</th>
-              <th scope="col" class="px-3 py-2">Nome</th>
+              <th scope="col" class="px-3 py-2">Atleta</th>
               <th scope="col" class="px-3 py-2">Posição</th>
+              <th scope="col" class="px-3 py-2">Camisa</th>
+              <th scope="col" class="px-3 py-2">Time</th>
               <th scope="col" class="px-3 py-2">Matrícula</th>
               <th scope="col" class="px-3 py-2">Titular</th>
               <th scope="col" class="px-3 py-2 sr-only">Ação</th>
@@ -262,9 +297,10 @@ function pickSelection(jersey, id) {
           </thead>
           <tbody>
             <tr v-for="(r, i) in roster" :key="r.jersey" :class="`border-b border-line-soft last:border-0 ${i % 2 === 1 ? 'bg-surface-2/40' : ''}`">
-              <td class="px-3 py-2 font-medium text-ink">{{ r.jersey }}</td>
-              <td class="px-3 py-2 text-ink-muted">{{ r.nome }}</td>
+              <td class="px-3 py-2 font-medium text-ink">{{ r.nome }}</td>
               <td class="px-3 py-2 text-ink-muted">{{ r.posicao }}</td>
+              <td class="px-3 py-2 font-medium text-ink tabular-nums">{{ r.jersey }}</td>
+              <td class="px-3 py-2"><TeamBadge v-if="r.time" :team="r.time" /><span v-else class="text-warning">A definir</span></td>
               <td class="px-3 py-2 text-ink-muted">{{ r.matricula }}</td>
               <td class="px-3 py-2 text-secondary"><Icon v-if="r.starter" name="check" class="h-4 w-4" /><template v-else>—</template></td>
               <td class="px-3 py-2 text-right">

@@ -81,18 +81,34 @@ export const FASE_TEMAS = {
 // `atletaId` resolvido a partir do registro único (data/atletas.js) por
 // matrícula, não digitado à mão — evita a escalação e o cadastro de atletas
 // divergirem silenciosamente (ver auditoria "Evolução do Dashboard", Fase 1).
+// `time` = cor do colete por atleta (dois times dentro do mesmo campo), no
+// formato da 2ª aba do modelo de súmula (ATLETA·POSIÇÃO·CAMPO·CAMISA·TIME·
+// CATEGORIA). `atletaId` resolvido a partir do registro único (data/atletas.js)
+// por matrícula, não digitado à mão.
 const rosterAmarelo = [
-  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", categoria: "Sub-15", matricula: "1001", starter: true },
-  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", categoria: "Sub-15", matricula: "1002", starter: true },
-  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", categoria: "Sub-15", matricula: "1003", starter: true },
-  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", categoria: "Sub-15", matricula: "1004", starter: true },
-  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", categoria: "Sub-15", matricula: "1005", starter: true },
-  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", categoria: "Sub-15", matricula: "1006", starter: true },
-  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", categoria: "Sub-15", matricula: "1007", starter: true },
-  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", categoria: "Sub-15", matricula: "1008", starter: true },
-  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", categoria: "Sub-15", matricula: "1009", starter: true },
-  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", categoria: "Sub-15", matricula: "1010", starter: true },
-  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", categoria: "Sub-15", matricula: "1011", starter: true },
+  { jersey: 1, nome: "Rodrigo Almeida", posicao: "Goleiro", categoria: "Sub-15", matricula: "1001", starter: true, time: "Amarelo" },
+  { jersey: 2, nome: "Maria Santos", posicao: "Lateral", categoria: "Sub-15", matricula: "1002", starter: true, time: "Amarelo" },
+  { jersey: 3, nome: "Pedro Costa", posicao: "Zagueiro", categoria: "Sub-15", matricula: "1003", starter: true, time: "Amarelo" },
+  { jersey: 4, nome: "Ana Silva", posicao: "Zagueira", categoria: "Sub-15", matricula: "1004", starter: true, time: "Amarelo" },
+  { jersey: 5, nome: "Carlos Oliveira", posicao: "Lateral", categoria: "Sub-15", matricula: "1005", starter: true, time: "Amarelo" },
+  { jersey: 6, nome: "Fernanda Costa", posicao: "Meia", categoria: "Sub-15", matricula: "1006", starter: true, time: "Amarelo" },
+  { jersey: 7, nome: "Bruno Silva", posicao: "Meia", categoria: "Sub-15", matricula: "1007", starter: true, time: "Azul" },
+  { jersey: 8, nome: "Juliana Santos", posicao: "Meia", categoria: "Sub-15", matricula: "1008", starter: true, time: "Azul" },
+  { jersey: 9, nome: "Ricardo Oliveira", posicao: "Atacante", categoria: "Sub-15", matricula: "1009", starter: true, time: "Azul" },
+  { jersey: 10, nome: "Beatriz Costa", posicao: "Atacante", categoria: "Sub-15", matricula: "1010", starter: true, time: "Azul" },
+  { jersey: 11, nome: "Gustavo Silva", posicao: "Atacante", categoria: "Sub-15", matricula: "1011", starter: true, time: "Azul" },
+].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
+
+// Roster de uma súmula ainda EM PREPARAÇÃO — alguns atletas sem camisa/time
+// definidos (estado "A definir" do modelo). Demonstra súmula incompleta.
+const rosterEmPreparacao = [
+  { jersey: 14, nome: "Lucas Orthey Kaize", posicao: "Zagueiro", categoria: "Sub-15", matricula: "1003", starter: true, time: "Amarelo" },
+  { jersey: 15, nome: "Lucas Eiji Siqueira", posicao: "Lateral", categoria: "Sub-15", matricula: "1005", starter: true, time: "Amarelo" },
+  { jersey: 16, nome: "Diogo Vieira Batista", posicao: "Lateral", categoria: "Sub-15", matricula: "1002", starter: true, time: "Amarelo" },
+  { jersey: 22, nome: "Matheus Ciancio", posicao: "Meia", categoria: "Sub-15", matricula: "1007", starter: true, time: "Azul" },
+  { jersey: 25, nome: "Gael Conte Soares", posicao: "Zagueiro", categoria: "Sub-15", matricula: "1004", starter: true, time: "Azul" },
+  { jersey: null, nome: "Theo Cordeiro Rossi", posicao: "Meia", categoria: "Sub-15", matricula: "1006", starter: true, time: null },
+  { jersey: null, nome: "Aymee Rodrigues Martins", posicao: "Lateral", categoria: "Sub-15", matricula: "1010", starter: false, time: null },
 ].map((entry) => ({ ...entry, atletaId: findAtletaByMatricula(entry.matricula)?.id }));
 
 const plano0207 = {
@@ -152,6 +168,7 @@ const sumula0207 = {
   id: "sum-0207",
   sessionDate: "2026-07-02",
   team: "Amarelo",
+  campo: "Campo Oficial 5",
   eventLabel: "Sessão 1 - Campo 2",
   status: "confirmed",
   entries: rosterAmarelo,
@@ -212,6 +229,42 @@ function shallowSumula(overrides) {
 }
 
 export const treinos = [
+  // Próxima aula (ainda não aconteceu) — demonstra o estado "antes da aula" do
+  // ciclo: plano aprovado, captura programada, súmula em preparação.
+  {
+    id: "t-0820",
+    sessionDate: "2026-08-20",
+    horario: "14:30",
+    unidade: "Atibaia",
+    categoria: "Sub-15",
+    turma: "Turma A",
+    team: "Amarelo",
+    campo: "Campo Oficial 5",
+    coachName: "João Silva",
+    status: "Rascunho",
+    capturaStatus: "programada",
+    videosStatus: "aguardando",
+    analiseStatus: "aguardando",
+    plano: shallowPlan({
+      id: "plan-0820",
+      sessionDate: "2026-08-20",
+      horario: "14:30",
+      status: "approved",
+      deadlineAt: calcDeadline("2026-08-20", "14:30"),
+      approvedAt: "2026-08-19T10:00:00",
+      approvedBy: "Carla Mendes (Head Coach)",
+    }),
+    sumula: {
+      id: "sum-0820",
+      sessionDate: "2026-08-20",
+      team: "Amarelo",
+      campo: "Campo Oficial 5",
+      eventLabel: "Sessão 1 - Campo 1",
+      status: "draft",
+      entries: rosterEmPreparacao,
+      confirmedAt: undefined,
+    },
+  },
   {
     id: "t-0702",
     sessionDate: "2026-07-02",
@@ -219,8 +272,12 @@ export const treinos = [
     categoria: "Sub-15",
     turma: "Turma A",
     team: "Amarelo",
+    campo: "Campo Oficial 5",
     coachName: "João Silva",
     status: "Executado",
+    capturaStatus: "realizada",
+    videosStatus: "disponivel",
+    analiseStatus: "pronta",
     plano: plano0207,
     sumula: sumula0207,
     executionLog: execution0207,
@@ -232,8 +289,12 @@ export const treinos = [
     categoria: "Sub-17",
     turma: "Turma B",
     team: "Azul",
+    campo: "Quadra 3 Positivo",
     coachName: "Maria Santos",
     status: "Executado",
+    capturaStatus: "realizada",
+    videosStatus: "disponivel",
+    analiseStatus: "aguardando",
     plano: shallowPlan({
       id: "plan-0701",
       sessionDate: "2026-07-01",
@@ -243,7 +304,7 @@ export const treinos = [
       coachName: "Maria Santos",
       deadlineAt: calcDeadline("2026-07-01", "16:00"),
     }),
-    sumula: shallowSumula({ id: "sum-0701", sessionDate: "2026-07-01", team: "Azul" }),
+    sumula: shallowSumula({ id: "sum-0701", sessionDate: "2026-07-01", team: "Azul", campo: "Quadra 3 Positivo" }),
     executionLog: { ...execution0207, id: "exec-0701" },
   },
   {
@@ -253,10 +314,14 @@ export const treinos = [
     categoria: "Sub-15",
     turma: "Turma A",
     team: "Amarelo",
+    campo: "Campo Oficial 5",
     coachName: "João Silva",
     status: "Executado",
+    capturaStatus: "realizada",
+    videosStatus: "disponivel",
+    analiseStatus: "pronta",
     plano: shallowPlan({ id: "plan-0630", sessionDate: "2026-06-30", deadlineAt: calcDeadline("2026-06-30", "16:00") }),
-    sumula: shallowSumula({ id: "sum-0630", sessionDate: "2026-06-30" }),
+    sumula: shallowSumula({ id: "sum-0630", sessionDate: "2026-06-30", campo: "Campo Oficial 5" }),
     executionLog: { ...execution0207, id: "exec-0630" },
   },
   {
@@ -266,8 +331,12 @@ export const treinos = [
     categoria: "Sub-17",
     turma: "Turma B",
     team: "Azul",
+    campo: "Quadra 3 Positivo",
     coachName: "Maria Santos",
     status: "Rascunho",
+    capturaStatus: "aguardando",
+    videosStatus: "aguardando",
+    analiseStatus: "aguardando",
     plano: shallowPlan({
       id: "plan-0629",
       sessionDate: "2026-06-29",
@@ -280,7 +349,7 @@ export const treinos = [
       approvedAt: undefined,
       approvedBy: undefined,
     }),
-    sumula: shallowSumula({ id: "sum-0629", sessionDate: "2026-06-29", team: "Azul", status: "draft", confirmedAt: undefined }),
+    sumula: shallowSumula({ id: "sum-0629", sessionDate: "2026-06-29", team: "Azul", campo: "Quadra 3 Positivo", status: "draft", confirmedAt: undefined }),
   },
   {
     id: "t-0628",
@@ -289,10 +358,14 @@ export const treinos = [
     categoria: "Sub-15",
     turma: "Turma A",
     team: "Amarelo",
+    campo: "Campo Oficial 5",
     coachName: "João Silva",
     status: "Executado",
+    capturaStatus: "realizada",
+    videosStatus: "disponivel",
+    analiseStatus: "aguardando",
     plano: shallowPlan({ id: "plan-0628", sessionDate: "2026-06-28", deadlineAt: calcDeadline("2026-06-28", "16:00") }),
-    sumula: shallowSumula({ id: "sum-0628", sessionDate: "2026-06-28" }),
+    sumula: shallowSumula({ id: "sum-0628", sessionDate: "2026-06-28", campo: "Campo Oficial 5" }),
     executionLog: { ...execution0207, id: "exec-0628" },
   },
   // Demonstra o card "Aulas executadas sem plano aprovado": execução registrada
@@ -304,8 +377,12 @@ export const treinos = [
     categoria: "Sub-15",
     turma: "Turma A",
     team: "Amarelo",
+    campo: "Campo Oficial 5",
     coachName: "João Silva",
     status: "Executado",
+    capturaStatus: "realizada",
+    videosStatus: "disponivel",
+    analiseStatus: "aguardando",
     plano: shallowPlan({
       id: "plan-0626",
       sessionDate: "2026-06-26",
@@ -317,7 +394,7 @@ export const treinos = [
       reviewedBy: "Carla Mendes (Head Coach)",
       reviewComment: "Duração da Etapa Principal fora do padrão — ajustar antes de reaprovar.",
     }),
-    sumula: shallowSumula({ id: "sum-0626", sessionDate: "2026-06-26" }),
+    sumula: shallowSumula({ id: "sum-0626", sessionDate: "2026-06-26", campo: "Campo Oficial 5" }),
     executionLog: { ...execution0207, id: "exec-0626" },
   },
 ];
