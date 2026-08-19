@@ -5,6 +5,7 @@ import { treinos } from "../data/mockData";
 import { cicloDaAula } from "../data/ciclo";
 import { Card, IntervaloFlow, StatusBadge, PrimaryButton, CicloAula, SumulaTabela } from "../components/ui";
 import Icon from "../components/Icon.vue";
+import PranchetaTatica from "./_PranchetaTatica.vue";
 import { session } from "../stores/session";
 
 function formatDateTime(iso) {
@@ -212,11 +213,13 @@ async function handleShare() {
             {{ plano.etapaInicial.estacao1.tipo }} · {{ plano.etapaInicial.estacao1.duracaoMin }} min · {{ plano.etapaInicial.estacao1.descricao }}
           </p>
           <p class="text-sm text-ink-muted">Materiais: {{ plano.etapaInicial.estacao1.materiais }}</p>
+          <div class="mt-2"><PranchetaTatica /></div>
           <p class="mt-2 text-sm font-medium text-ink">Estação 2 — {{ plano.etapaInicial.estacao2.nome }}</p>
           <p class="text-sm text-ink-muted">
             {{ plano.etapaInicial.estacao2.tipo }} · {{ plano.etapaInicial.estacao2.duracaoMin }} min · {{ plano.etapaInicial.estacao2.descricao }}
           </p>
           <p class="text-sm text-ink-muted">Materiais: {{ plano.etapaInicial.estacao2.materiais }}</p>
+          <div class="mt-2"><PranchetaTatica /></div>
         </div>
         <div :class="etapaCardClass('fundamentacao')">
           <p class="flex items-center gap-1.5 text-sm font-semibold text-ink">
