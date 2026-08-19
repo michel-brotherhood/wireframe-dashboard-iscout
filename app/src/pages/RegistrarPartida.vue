@@ -80,13 +80,6 @@ function onMatricula(team) {
   }
 }
 
-function numberInUse(team, n) {
-  return m.value.players.some((p) => {
-    if (p.bib_number === "" || p.bib_number == null) return false;
-    return isSingleColor.value ? p.bib_number === n : p.team === team && p.bib_number === n;
-  });
-}
-
 function addPlayer(team) {
   const d = draft.value[team];
   addError.value[team] = null;
@@ -96,15 +89,9 @@ function addPlayer(team) {
     addError.value[team] = "Digite a matrícula ou o nome do jogador.";
     return;
   }
+  // Número repetido / fora de faixa NÃO bloqueiam — nesta fase de wireframe são
+  // só sinalizados (badge). A regra definitiva fica pendente de validação.
   const num = d.num === "" ? "" : Number(d.num);
-  if (num !== "" && numberInUse(team, num)) {
-    addError.value[team] = `O número ${num} já está em uso neste time.`;
-    return;
-  }
-  if (num !== "" && isOutOfRange(m.value, num)) {
-    addError.value[team] = `Número fora da faixa (${m.value.number_min}–${m.value.number_max}).`;
-    return;
-  }
   const p = newPlayer(team);
   p.name = name;
   p.athlete_id = found?.id ?? null;
@@ -115,7 +102,7 @@ function addPlayer(team) {
   m.value.players.push(p);
   touch();
   draft.value[team] = { num: "", mat: "", name: "", min: "", pos: "" };
-  status.value = found ? `${name} escalado (cadastro ${found.id}).` : `${name} escalado (sem vínculo de cadastro).`;
+  status.value = found ? `${name} escalado (do cadastro).` : `${name} escalado (sem cadastro).`;
 }
 
 function removePlayer(id) {
@@ -156,25 +143,20 @@ function download(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-// A súmula só faz sentido atrelada a um campo (1 súmula = 1 campo). Sem campo,
-// o pipeline não consegue casar "súmula do dia X no campo Y" com os vídeos.
-function exigeCampo() {
-  if (m.value.location && m.value.location.trim()) return true;
-  status.value = "Informe o Campo antes de exportar — cada súmula é de um campo.";
-  return false;
-}
+// 1 súmula = 1 campo: sem campo a exportação ainda funciona, mas avisamos —
+// não é um bloqueio (regra definitiva pendente de validação).
+const semCampo = computed(() => !(m.value.location && m.value.location.trim()));
+const dicaCampo = " — dica: informe o Campo para identificar a súmula.";
 
 function exportJSON() {
-  if (!exigeCampo()) return;
   download(sumulaFilename(m.value) + ".json", JSON.stringify(buildPayload(m.value), null, 2), "application/json");
-  status.value = "JSON da súmula baixado.";
+  status.value = "JSON da súmula baixado" + (semCampo.value ? dicaCampo : ".");
 }
 
 // CSV no formato do modelo (aba de súmula) + a chave athlete_id que o backend
 // pediu (id, não nome). Colunas: athlete_id, atleta, posicao, campo, camisa,
 // time, categoria, data.
 function exportCSV() {
-  if (!exigeCampo()) return;
   const { match, players } = buildPayload(m.value);
   const cols = ["athlete_id", "atleta", "posicao", "campo", "camisa", "time", "categoria", "data"];
   const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -193,24 +175,8 @@ function exportCSV() {
       .join(",");
   const rows = [cols.join(",")].concat(players.map(linha));
   download(sumulaFilename(m.value) + ".csv", rows.join("\n"), "text/csv");
-  status.value = "Súmula (CSV) baixada — pronta para o gatilho do pipeline.";
+  status.value = "Súmula (CSV) baixada" + (semCampo.value ? dicaCampo : ".");
 }
-
-async function copyUUIDs() {
-  const { match, players } = buildPayload(m.value);
-  const txt =
-    `PARTIDA ${match.match_uuid}\n` +
-    players.map((p) => `${p.bib_number}\t${p.name}\t${p.athlete_id ?? "—"}\t${p.player_uuid}`).join("\n");
-  try {
-    await navigator.clipboard?.writeText(txt);
-    status.value = "UUIDs copiados para a área de transferência.";
-  } catch {
-    status.value = "Não foi possível copiar automaticamente.";
-  }
-}
-
-const payloadPreview = computed(() => JSON.stringify(buildPayload(m.value), null, 2));
-const showPayload = ref(false);
 </script>
 
 <template>
@@ -222,8 +188,8 @@ const showPayload = ref(false);
           Registrar Partida
         </h1>
         <p class="mt-1 text-sm text-ink-muted">
-          Cada partida é <span class="font-medium text-ink">a súmula de um campo</span>. A súmula exportada — com o
-          <span class="font-medium text-ink">id do atleta</span> — é o gatilho da análise de vídeo (CV/VLM).
+          Cada partida é <span class="font-medium text-ink">a súmula de um campo</span> — atleta, posição, camisa e
+          time. Selecione atletas do cadastro pela matrícula.
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -311,15 +277,14 @@ const showPayload = ref(false);
     <Card title="Coletes — numeração e cores">
       <template #icon><Icon name="stamp" class="h-4 w-4" /></template>
       <p class="mb-3 text-sm text-ink-muted">
-        Define a chave que a análise de vídeo usa para reconhecer cada jogador: <span class="font-medium text-ink">cor + número</span>.
-        Escolha como os coletes foram distribuídos hoje.
+        Como os coletes foram distribuídos hoje: <span class="font-medium text-ink">cor + número</span> identificam cada jogador.
       </p>
       <Field label="Esquema">
         <RadioGroup :options="SCHEME_OPTIONS" v-model="schemeLabel" />
       </Field>
       <p class="mb-4 -mt-2 text-xs text-ink-muted">
-        <template v-if="isSingleColor">Uma cor para os dois times — cada número é único, ninguém repete. É o formato que o pipeline espera: sem números repetidos, dispensa a identificação de time.</template>
-        <template v-else>Uma cor por time — números podem repetir entre os times (nº 7 casa e nº 7 visitante). Exige a etapa extra de identificação de time no vídeo.</template>
+        <template v-if="isSingleColor">Uma cor para os dois times — cada número é único, ninguém repete (recomendado).</template>
+        <template v-else>Uma cor por time — números podem repetir entre os times (nº 7 casa e nº 7 visitante).</template>
       </p>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -387,8 +352,7 @@ const showPayload = ref(false);
                 <p class="truncate text-sm font-semibold text-ink">{{ p.name || "(sem nome)" }}</p>
                 <p class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted">
                   <span class="rounded-full bg-surface px-2 py-0.5">{{ p.position || "—" }}</span>
-                  <span v-if="p.athlete_id" class="rounded-full bg-secondary/15 px-2 py-0.5 font-mono text-secondary">{{ p.athlete_id }}</span>
-                  <span v-else class="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning">sem vínculo</span>
+                  <span v-if="!p.athlete_id" class="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning">sem cadastro</span>
                   <span>⏱ {{ p.minutes_played || 0 }}′</span>
                   <template v-if="m.track_score">
                     <span v-if="p.goals">⚽ {{ p.goals }}</span>
@@ -398,7 +362,6 @@ const showPayload = ref(false);
                   <span v-if="isOutOfRange(m, p.bib_number)" class="font-semibold text-primary-text">fora da faixa</span>
                   <span v-if="dup.has(p.player_uuid)" class="font-semibold text-primary-text">nº repetido</span>
                 </p>
-                <p class="truncate font-mono text-[10px] text-ink-faint">{{ p.player_uuid }}</p>
               </div>
               <button
                 type="button"
@@ -446,14 +409,13 @@ const showPayload = ref(false);
                 class="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-secondary"
               >
                 <Icon name="check" class="h-3.5 w-3.5 shrink-0" />
-                Cadastro: {{ resolvedFor(team).nome }} · {{ resolvedFor(team).posicao }} ·
-                <span class="font-mono">{{ resolvedFor(team).id }}</span>
+                {{ resolvedFor(team).nome }} · {{ resolvedFor(team).posicao }} — atleta do cadastro
               </p>
               <p
                 v-else-if="draft[team].mat || draft[team].name"
                 class="mt-1.5 flex items-center gap-1.5 text-[11px] text-warning"
               >
-                <Icon name="alert" class="h-3.5 w-3.5 shrink-0" /> Sem vínculo de cadastro (a pipeline usa o id do atleta).
+                <Icon name="alert" class="h-3.5 w-3.5 shrink-0" /> Sem correspondência no cadastro — confira a matrícula.
               </p>
               <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <input
@@ -492,7 +454,7 @@ const showPayload = ref(false);
         </div>
         <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
           <p :class="`font-heading text-2xl font-bold ${semVinculo ? 'text-warning' : 'text-ink'}`">{{ semVinculo }}</p>
-          <p class="text-xs uppercase tracking-wide text-ink-muted">Sem vínculo</p>
+          <p class="text-xs uppercase tracking-wide text-ink-muted">Sem cadastro</p>
         </div>
         <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
           <p :class="`font-heading text-2xl font-bold ${dup.size ? 'text-primary-text' : 'text-ink'}`">{{ dup.size }}</p>
@@ -515,34 +477,14 @@ const showPayload = ref(false);
         <PrimaryButton variant="secondary" @click="exportJSON">
           <Icon name="download" class="h-4 w-4" /> Súmula (JSON)
         </PrimaryButton>
-        <PrimaryButton variant="secondary" @click="copyUUIDs">
-          <Icon name="share" class="h-4 w-4" /> Copiar UUIDs
-        </PrimaryButton>
       </div>
       <p class="mt-3 text-sm text-ink-muted">
-        O CSV segue o modelo da escolinha —
-        <span class="font-mono text-ink">athlete_id · atleta · posição · campo · camisa · time · categoria · data</span> —
-        e é nomeado por <span class="font-mono text-ink">dia + campo</span> (ex.:
-        <span class="font-mono text-ink">sumula_2026-08-11_CAMPO-OFICIAL-5</span>). O <span class="font-mono text-ink">athlete_id</span>
-        é a identidade que a pipeline consome; o JSON traz ainda o índice <span class="font-mono text-ink">cv_index</span>
-        (chave cor · número → jogador) para a análise de vídeo.
+        A súmula sai no formato do modelo da escolinha —
+        <span class="font-medium text-ink">atleta · posição · campo · camisa · time · categoria · data</span> —
+        e é nomeada por <span class="font-medium text-ink">dia + campo</span> (ex.:
+        <span class="font-medium text-ink">sumula_2026-08-11_CAMPO-OFICIAL-5</span>). Placar, gols e cartões são
+        <span class="font-medium text-ink">opcionais</span> (dados de jogo, fora do modelo da súmula).
       </p>
-
-      <div class="mt-3">
-        <button
-          type="button"
-          @click="showPayload = !showPayload"
-          :aria-expanded="showPayload"
-          class="flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
-        >
-          <Icon name="chevronDown" :class="`h-4 w-4 transition-transform ${showPayload ? 'rotate-180' : ''}`" />
-          {{ showPayload ? "Ocultar" : "Ver" }} payload que seria enviado ao banco
-        </button>
-        <pre
-          v-if="showPayload"
-          class="mt-2 max-h-80 overflow-auto rounded-xl border border-line-soft bg-canvas p-3 font-mono text-[11px] leading-relaxed text-ink-muted"
-        >{{ payloadPreview }}</pre>
-      </div>
     </Card>
   </div>
 </template>

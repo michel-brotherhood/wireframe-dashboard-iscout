@@ -9,6 +9,8 @@ import { session } from "../stores/session";
 import { dashboardFilters, resetDashboardFilters } from "../stores/dashboardFilters";
 import { escopoContem } from "../data/users";
 import { resumoReforco } from "../data/fundamentos";
+import { cicloDaAula } from "../data/ciclo";
+import { CicloAula } from "../components/ui";
 import ResumoResponsavel from "./ResumoResponsavel.vue";
 
 const TODAY = todayDateString();
@@ -128,6 +130,16 @@ const filteredTreinos = computed(() =>
 );
 
 const cards = computed(() => buildCards(role.value, escopedPlanos.value, escopedTreinos.value));
+
+// Acompanhamento do ciclo das aulas: prioriza as próximas (>= hoje); se não
+// houver, mostra as mais recentes. Usa o escopo do usuário (não o filtro de
+// "período até" da tabela de histórico) para não esconder a próxima aula.
+const aulasAcompanhamento = computed(() => {
+  const list = escopedTreinos.value;
+  const futuras = list.filter((t) => t.sessionDate >= TODAY);
+  return (futuras.length ? futuras : list).slice(0, 3).map((t) => ({ treino: t, etapas: cicloDaAula(t) }));
+});
+
 const rascunhos = computed(() => escopedPlanos.value.filter((p) => p.status === "draft"));
 const roleTitle = computed(() =>
   role.value === "admin" ? "Painel central de gestão pedagógica e operacional" : "Minhas aulas e planos",
@@ -320,6 +332,31 @@ function onTreinoKey(e, id) {
         </button>
       </Card>
     </div>
+
+    <Card v-if="aulasAcompanhamento.length > 0" title="Acompanhamento das aulas">
+      <template #icon><Icon name="calendar" class="h-4 w-4" /></template>
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div
+          v-for="a in aulasAcompanhamento"
+          :key="a.treino.id"
+          @click="navigate(`/treinos/${a.treino.id}`)"
+          tabindex="0"
+          role="button"
+          :aria-label="`Ver a aula de ${formatDate(a.treino.sessionDate)} · ${a.treino.campo || a.treino.turma}`"
+          @keydown="onTreinoKey($event, a.treino.id)"
+          class="cursor-pointer rounded-xl border border-line-soft bg-surface-2 p-3 outline-none transition-colors hover:border-primary/40 focus-visible:bg-primary/10"
+        >
+          <p class="text-sm font-semibold text-ink">
+            {{ a.treino.categoria }} · {{ a.treino.campo || a.treino.turma }}
+          </p>
+          <p class="mb-3 text-xs text-ink-muted">
+            {{ formatDate(a.treino.sessionDate) }}<span v-if="a.treino.plano.horario"> · {{ a.treino.plano.horario }}</span>
+            · {{ a.treino.coachName }}
+          </p>
+          <CicloAula :etapas="a.etapas" compact />
+        </div>
+      </div>
+    </Card>
 
     <Card v-if="role !== 'responsavel' && rascunhos.length > 0" :title="`Meus Rascunhos (${rascunhos.length})`">
       <template #icon><Icon name="clipboard" class="h-4 w-4" /></template>

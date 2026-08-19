@@ -11,6 +11,17 @@ const statusDot = {
   confirmed: "bg-secondary",
   Executado: "bg-secondary",
   Rascunho: "bg-ink-faint",
+  // Estados do ciclo da aula (Plano→Captura→Súmula→Execução→Vídeos→Análise)
+  programada: "bg-warning",
+  realizada: "bg-secondary",
+  em_preparacao: "bg-warning",
+  enviada: "bg-secondary",
+  validada: "bg-secondary",
+  aguardando: "bg-ink-faint",
+  disponivel: "bg-secondary",
+  pronta: "bg-secondary",
+  pendente: "bg-warning",
+  a_definir: "bg-warning",
 };
 
 const statusLabels = {
@@ -23,6 +34,17 @@ const statusLabels = {
   confirmed: "Confirmado",
   Executado: "Executado",
   Rascunho: "Rascunho",
+  // Estados do ciclo da aula
+  programada: "Programada",
+  realizada: "Realizada",
+  em_preparacao: "Em preparação",
+  enviada: "Enviada",
+  validada: "Validada",
+  aguardando: "Aguardando",
+  disponivel: "Disponíveis",
+  pronta: "Pronta",
+  pendente: "Pendente",
+  a_definir: "A definir",
 };
 </script>
 
