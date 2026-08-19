@@ -20,6 +20,9 @@ const filtroAtivo = computed(() =>
 );
 const status = ref(null);
 
+// Etapas da jornada até o reforço (§53 da briefing) — a última é a atual.
+const jornada = ["Plano", "Aula", "Súmula + Vídeos", "Análise", "Indicadores", "Reforço"];
+
 function sugerir(fundamento, qtd) {
   status.value = `Sugestão registrada (protótipo): sessão de reforço de ${fundamento} para ${qtd} atleta${qtd > 1 ? "s" : ""}.`;
 }
@@ -40,6 +43,19 @@ function contexto(a) {
         Sugestões de IA (protótipo) a partir dos indicadores de fundamentos — atletas com deficiência
         são agrupados para treinos de reforço.
       </p>
+      <!-- Trilho da jornada: deixa claro de onde vêm os indicadores/reforço
+           (Plano → Aula → Súmula+Vídeos → Análise → Indicadores → Reforço). -->
+      <div class="no-scrollbar mt-3 flex items-center gap-1 overflow-x-auto pb-1" aria-label="Jornada até o reforço">
+        <template v-for="(etapa, i) in jornada" :key="etapa">
+          <span
+            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
+            :class="i === jornada.length - 1 ? 'bg-primary/15 text-primary-text' : 'bg-surface-2 text-ink-muted'"
+          >
+            {{ etapa }}
+          </span>
+          <Icon v-if="i < jornada.length - 1" name="arrowRight" class="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+        </template>
+      </div>
     </div>
 
     <p class="flex items-start gap-2 rounded-xl border border-line-soft bg-surface-2 p-3 text-sm text-ink-muted">

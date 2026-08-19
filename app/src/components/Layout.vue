@@ -20,7 +20,6 @@ function navItemsForRole(role) {
   if (role !== "responsavel") {
     items.push(
       { to: "/planos/novo", label: "Novo Plano", short: "Plano", icon: "clipboard" },
-      { to: "/sumulas/novo", label: "Nova Súmula", short: "Súmula", icon: "ball" },
       { to: "/execution/novo", label: "Registrar Execução", short: "Execução", icon: "barChart" },
     );
   }
@@ -33,6 +32,9 @@ function navItemsForRole(role) {
   }
   // Reforço (IA) foi tirado do menu para enxugá-lo — continua acessível pelo
   // card "Indicadores de Fundamentos (IA) → Ver reforço" no Dashboard.
+  // "Nova Súmula" também saiu do menu: a súmula pertence à aula e é acessada
+  // pelo contexto dela (Detalhe do Treino → "Editar Escalação"), não como item
+  // solto (briefing §13). A rota /sumulas/novo continua existindo.
   return items;
 }
 
