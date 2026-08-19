@@ -1,10 +1,14 @@
 import { reactive, watch } from "vue";
+import { atletas } from "../data/atletas";
 
 // Registro de partidas (jogo real entre dois times) — separado da súmula de
-// treino (EditorSumula.vue, que é escalação de uma turma). Cada partida e cada
-// jogador recebem um UUID; a chave que uma futura pipeline de vídeo (CV/VLM)
-// usa para reconhecer o jogador é (match_uuid · cor do colete · número).
-// Mock/protótipo: persiste no navegador (localStorage), sem backend.
+// treino (EditorSumula.vue, que é escalação de uma turma). Cada partida/campo
+// vira UMA súmula (regra do backend: "cada campo/partida tem sua própria
+// súmula"), e cada jogador carrega o `athlete_id` (id estável do cadastro em
+// data/atletas.js, que faz o papel do athletes.id do backend). Esse id — não o
+// nome — é a identidade que a pipeline de CV/VLM consome. Com numeração única
+// por partida a chave de reconhecimento é só match_uuid · número (dispensa a
+// identificação de time). Mock/protótipo: persiste no navegador, sem backend.
 const STORAGE_KEY = "iscout.partidas.v1";
 
 function nowISO() {
@@ -15,9 +19,10 @@ function uuid() {
   return crypto.randomUUID();
 }
 
-// Molde de uma nova partida. Esquema de colete "duas cores" (uma cor por time,
-// número pode repetir entre times) é o padrão; "cor única" torna o número
-// global (ninguém repete).
+// Molde de uma nova partida. O padrão é "cor única" (numeração única na
+// partida): é o formato que o pipeline de CV/VLM espera, porque sem números
+// repetidos não é preciso rodar a identificação de time. "Duas cores" (uma cor
+// por time, número pode repetir entre times) continua disponível.
 export function newMatch() {
   const id = uuid();
   return {
@@ -28,7 +33,7 @@ export function newMatch() {
     team_home_name: "Time A",
     team_away_name: "Time B",
     location: "",
-    bib_scheme: "two_colors_repeat", // ou "one_color_unique"
+    bib_scheme: "one_color_unique", // ou "two_colors_repeat"
     bib_color_home: "#fbbf24",
     bib_label_home: "Amarelo",
     bib_color_away: "#5b8def",
@@ -49,6 +54,8 @@ export function newPlayer(team) {
   return {
     player_uuid: uuid(),
     team,
+    athlete_id: null, // id do cadastro (data/atletas.js) — a chave que a pipeline usa
+    matricula: "", // chave digitável que resolve o athlete_id
     name: "",
     bib_number: "",
     position: "",
@@ -163,6 +170,9 @@ export function buildPayload(m) {
     match_uuid: m.match_uuid,
     category: m.category,
     match_date: m.match_date,
+    // Identidade da súmula (1 súmula = 1 campo): a automação do pipeline casa
+    // "súmula do dia X no campo Y" com os vídeos correspondentes.
+    campo: m.location,
     kickoff_time: m.kickoff_time,
     team_home_name: m.team_home_name,
     team_away_name: m.team_away_name,
@@ -185,6 +195,7 @@ export function buildPayload(m) {
     return {
       player_uuid: p.player_uuid,
       match_uuid: m.match_uuid,
+      athlete_id: p.athlete_id ?? null,
       name: p.name,
       team: p.team,
       bib_color_hex: hex,
@@ -208,4 +219,22 @@ export function buildPayload(m) {
         : `${m.match_uuid}|${p.bib_color_hex}|${p.bib_number}`,
   }));
   return { schema_version: 1, exported_at: nowISO(), match, players, cv_index };
+}
+
+// Nome do arquivo da súmula: espelha as abas do modelo (Ana/iSCOUT), ex.:
+// "sumula_2026-08-11_CAMPO-OFICIAL-5". Campo em maiúsculas, sem acento, hifens.
+export function sumulaFilename(m) {
+  const campo = (m.location || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `sumula_${m.match_date || "sem-data"}_${campo || "SEM-CAMPO"}`;
+}
+
+// Atletas do cadastro filtrados pela categoria da partida — alimenta o
+// autocomplete de matrícula na hora de escalar (resolve nome/posição/id).
+export function atletasDaCategoria(categoria) {
+  return atletas.filter((a) => a.categoria === categoria);
 }

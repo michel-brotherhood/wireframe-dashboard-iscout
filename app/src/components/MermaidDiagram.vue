@@ -2,6 +2,9 @@
 import mermaid from "mermaid";
 
 let initialized = false;
+// Contador monotônico de nível de módulo (persiste entre montagens) para dar a
+// cada render de mermaid um id de DOM único — ver nota no <script setup>.
+let renderSeq = 0;
 
 // Rounds node/entity/actor boxes to match the app's rounded-xl/2xl card
 // language instead of mermaid's default sharp-cornered rectangles.
@@ -81,7 +84,7 @@ function stripSizeConstraints(svgMarkup) {
 </script>
 
 <script setup>
-import { ref, useId, watch, onBeforeUnmount } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 import svgPanZoom from "svg-pan-zoom";
 import Icon from "./Icon.vue";
 
@@ -90,7 +93,11 @@ const props = defineProps({
 });
 
 ensureInit();
-const renderId = useId().replace(/:/g, "");
+// Id único por render de mermaid. `useId()` repetia entre remounts na mesma
+// posição (o Arquitetura troca de diagrama via :key), e mermaid.render colidia
+// no id de DOM — o diagrama trocava o título mas mantinha o SVG anterior. O
+// contador de módulo (renderSeq) garante id novo a cada montagem.
+const renderId = `mmdd${(renderSeq += 1)}`;
 
 const svg = ref(null);
 const error = ref(null);
@@ -132,37 +139,52 @@ watch(
     const svgEl = containerRef.value.querySelector("svg");
     if (!svgEl) return;
 
-    const instance = svgPanZoom(svgEl, {
-      controlIconsEnabled: false,
-      fit: true,
-      center: true,
-      minZoom: 0.5,
-      maxZoom: 8,
-      zoomScaleSensitivity: 0.3,
-      dblClickZoomEnabled: true,
-      mouseWheelZoomEnabled: true,
-      preventMouseEventsDefault: true,
-      onZoom: (newZoom) => {
-        zoom.value = newZoom;
-      },
-    });
+    // svg-pan-zoom pode falhar se o SVG ainda não tem caixa mensurável em certos
+    // timings (erro "customEventsHandler"); o diagrama já está renderizado via
+    // v-html, então um pan/zoom indisponível não deve derrubar a visualização.
+    let instance;
+    try {
+      instance = svgPanZoom(svgEl, {
+        controlIconsEnabled: false,
+        fit: true,
+        center: true,
+        minZoom: 0.5,
+        maxZoom: 8,
+        zoomScaleSensitivity: 0.3,
+        dblClickZoomEnabled: true,
+        mouseWheelZoomEnabled: true,
+        preventMouseEventsDefault: true,
+        onZoom: (newZoom) => {
+          zoom.value = newZoom;
+        },
+      });
+    } catch {
+      return;
+    }
     panZoomInstance = instance;
     zoom.value = instance.getZoom();
 
     onCleanup(() => {
-      instance.destroy();
-      panZoomInstance = null;
+      destroyPanZoom();
     });
   },
   { flush: "post" },
 );
 
-onBeforeUnmount(() => {
-  if (panZoomInstance) {
+// destroy() do svg-pan-zoom pode lançar ("customEventsHandler" indefinido)
+// durante a troca de diagrama; se esse erro escapa, ele quebra o patch do Vue e
+// o novo diagrama não monta. Isolar aqui garante que a troca sempre acontece.
+function destroyPanZoom() {
+  if (!panZoomInstance) return;
+  try {
     panZoomInstance.destroy();
-    panZoomInstance = null;
+  } catch {
+    // instância já inconsistente — descarta mesmo assim
   }
-});
+  panZoomInstance = null;
+}
+
+onBeforeUnmount(destroyPanZoom);
 
 function zoomOut() {
   panZoomInstance?.zoomOut();

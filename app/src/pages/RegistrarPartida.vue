@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { Card, Field, PrimaryButton, RadioGroup, inputClass, inputErrorClass } from "../components/ui";
 import Icon from "../components/Icon.vue";
 import { CATEGORIAS, POSICOES } from "../data/planoOptions";
+import { findAtletaByMatricula } from "../data/atletas";
 import {
   partidasStore,
   currentMatch,
@@ -15,6 +16,8 @@ import {
   isOutOfRange,
   buildPayload,
   newPlayer,
+  sumulaFilename,
+  atletasDaCategoria,
 } from "../stores/partidas";
 
 const SCHEME_OPTIONS = ["Duas cores", "Cor única"];
@@ -48,13 +51,34 @@ const totalMinutes = computed(() => m.value.players.reduce((a, p) => a + (Number
 const noNumber = computed(
   () => m.value.players.filter((p) => p.bib_number === "" || p.bib_number == null).length,
 );
+// Jogadores sem vínculo com o cadastro (athlete_id nulo) — a pipeline precisa
+// do id, então esses ficam sinalizados.
+const semVinculo = computed(() => m.value.players.filter((p) => !p.athlete_id).length);
+
+// Atletas do cadastro na categoria da partida — autocomplete de matrícula.
+const atletasCat = computed(() => atletasDaCategoria(m.value.category));
 
 // --- adicionar jogador (form por time) ---
 const draft = ref({
-  home: { num: "", name: "", min: "", pos: "" },
-  away: { num: "", name: "", min: "", pos: "" },
+  home: { num: "", mat: "", name: "", min: "", pos: "" },
+  away: { num: "", mat: "", name: "", min: "", pos: "" },
 });
 const addError = ref({ home: null, away: null });
+
+// Atleta resolvido pela matrícula digitada (ou null).
+function resolvedFor(team) {
+  return findAtletaByMatricula(draft.value[team].mat) ?? null;
+}
+
+// Ao digitar a matrícula, se resolver, espelha nome/posição no formulário para
+// o treinador conferir antes de adicionar.
+function onMatricula(team) {
+  const found = resolvedFor(team);
+  if (found) {
+    draft.value[team].name = found.nome;
+    draft.value[team].pos = found.posicao;
+  }
+}
 
 function numberInUse(team, n) {
   return m.value.players.some((p) => {
@@ -66,9 +90,10 @@ function numberInUse(team, n) {
 function addPlayer(team) {
   const d = draft.value[team];
   addError.value[team] = null;
-  const name = d.name.trim();
+  const found = findAtletaByMatricula(d.mat);
+  const name = (found?.nome || d.name).trim();
   if (!name) {
-    addError.value[team] = "Digite o nome do jogador.";
+    addError.value[team] = "Digite a matrícula ou o nome do jogador.";
     return;
   }
   const num = d.num === "" ? "" : Number(d.num);
@@ -82,13 +107,15 @@ function addPlayer(team) {
   }
   const p = newPlayer(team);
   p.name = name;
+  p.athlete_id = found?.id ?? null;
+  p.matricula = found ? found.matricula : d.mat.trim();
+  p.position = found?.posicao || d.pos;
   p.bib_number = num;
-  p.position = d.pos;
   p.minutes_played = d.min === "" ? 0 : Number(d.min);
   m.value.players.push(p);
   touch();
-  draft.value[team] = { num: "", name: "", min: "", pos: "" };
-  status.value = "Jogador adicionado.";
+  draft.value[team] = { num: "", mat: "", name: "", min: "", pos: "" };
+  status.value = found ? `${name} escalado (cadastro ${found.id}).` : `${name} escalado (sem vínculo de cadastro).`;
 }
 
 function removePlayer(id) {
@@ -129,41 +156,51 @@ function download(name, text, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-function slug() {
-  return `partida_${m.value.category}_${m.value.match_date}`.replace(/[^\w-]+/g, "_");
+// A súmula só faz sentido atrelada a um campo (1 súmula = 1 campo). Sem campo,
+// o pipeline não consegue casar "súmula do dia X no campo Y" com os vídeos.
+function exigeCampo() {
+  if (m.value.location && m.value.location.trim()) return true;
+  status.value = "Informe o Campo antes de exportar — cada súmula é de um campo.";
+  return false;
 }
 
 function exportJSON() {
-  download(slug() + ".json", JSON.stringify(buildPayload(m.value), null, 2), "application/json");
-  status.value = "JSON baixado (schema pronto para o banco).";
+  if (!exigeCampo()) return;
+  download(sumulaFilename(m.value) + ".json", JSON.stringify(buildPayload(m.value), null, 2), "application/json");
+  status.value = "JSON da súmula baixado.";
 }
 
+// CSV no formato do modelo (aba de súmula) + a chave athlete_id que o backend
+// pediu (id, não nome). Colunas: athlete_id, atleta, posicao, campo, camisa,
+// time, categoria, data.
 function exportCSV() {
-  const { players } = buildPayload(m.value);
-  const cols = [
-    "player_uuid",
-    "match_uuid",
-    "name",
-    "team",
-    "bib_color_hex",
-    "bib_color_label",
-    "bib_number",
-    "position",
-    "minutes_played",
-    "goals",
-    "yellow_cards",
-    "red_cards",
-  ];
+  if (!exigeCampo()) return;
+  const { match, players } = buildPayload(m.value);
+  const cols = ["athlete_id", "atleta", "posicao", "campo", "camisa", "time", "categoria", "data"];
   const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const rows = [cols.join(",")].concat(players.map((p) => cols.map((c) => q(p[c])).join(",")));
-  download(slug() + "_jogadores.csv", rows.join("\n"), "text/csv");
-  status.value = "CSV baixado.";
+  const linha = (p) =>
+    [
+      p.athlete_id ?? "",
+      p.name,
+      p.position,
+      match.campo,
+      p.bib_number,
+      p.bib_color_label,
+      match.category,
+      match.match_date,
+    ]
+      .map(q)
+      .join(",");
+  const rows = [cols.join(",")].concat(players.map(linha));
+  download(sumulaFilename(m.value) + ".csv", rows.join("\n"), "text/csv");
+  status.value = "Súmula (CSV) baixada — pronta para o gatilho do pipeline.";
 }
 
 async function copyUUIDs() {
   const { match, players } = buildPayload(m.value);
   const txt =
-    `PARTIDA ${match.match_uuid}\n` + players.map((p) => `${p.bib_number}\t${p.name}\t${p.player_uuid}`).join("\n");
+    `PARTIDA ${match.match_uuid}\n` +
+    players.map((p) => `${p.bib_number}\t${p.name}\t${p.athlete_id ?? "—"}\t${p.player_uuid}`).join("\n");
   try {
     await navigator.clipboard?.writeText(txt);
     status.value = "UUIDs copiados para a área de transferência.";
@@ -185,8 +222,8 @@ const showPayload = ref(false);
           Registrar Partida
         </h1>
         <p class="mt-1 text-sm text-ink-muted">
-          Registro de jogo (dois times) — a chave <span class="font-medium text-ink">cor + número</span> do colete
-          é o que uma futura análise de vídeo usa para reconhecer cada jogador.
+          Cada partida é <span class="font-medium text-ink">a súmula de um campo</span>. A súmula exportada — com o
+          <span class="font-medium text-ink">id do atleta</span> — é o gatilho da análise de vídeo (CV/VLM).
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -239,8 +276,8 @@ const showPayload = ref(false);
         <Field label="Time visitante" required>
           <input :class="inputClass" v-model="m.team_away_name" placeholder="Ex.: Branco" @input="touch" />
         </Field>
-        <Field label="Local" hint="Opcional">
-          <input :class="inputClass" v-model="m.location" placeholder="Campo / quadra" @input="touch" />
+        <Field label="Campo" required hint="1 súmula = 1 campo">
+          <input :class="inputClass" v-model="m.location" placeholder="Ex.: CAMPO OFICIAL 5" @input="touch" />
         </Field>
       </div>
       <label class="mb-4 flex items-center gap-2 text-sm text-ink">
@@ -281,8 +318,8 @@ const showPayload = ref(false);
         <RadioGroup :options="SCHEME_OPTIONS" v-model="schemeLabel" />
       </Field>
       <p class="mb-4 -mt-2 text-xs text-ink-muted">
-        <template v-if="isSingleColor">Uma cor para os dois times — cada número é único, ninguém repete.</template>
-        <template v-else>Uma cor por time — números podem repetir entre os times (nº 7 casa e nº 7 visitante).</template>
+        <template v-if="isSingleColor">Uma cor para os dois times — cada número é único, ninguém repete. É o formato que o pipeline espera: sem números repetidos, dispensa a identificação de time.</template>
+        <template v-else>Uma cor por time — números podem repetir entre os times (nº 7 casa e nº 7 visitante). Exige a etapa extra de identificação de time no vídeo.</template>
       </p>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -350,6 +387,8 @@ const showPayload = ref(false);
                 <p class="truncate text-sm font-semibold text-ink">{{ p.name || "(sem nome)" }}</p>
                 <p class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted">
                   <span class="rounded-full bg-surface px-2 py-0.5">{{ p.position || "—" }}</span>
+                  <span v-if="p.athlete_id" class="rounded-full bg-secondary/15 px-2 py-0.5 font-mono text-secondary">{{ p.athlete_id }}</span>
+                  <span v-else class="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning">sem vínculo</span>
                   <span>⏱ {{ p.minutes_played || 0 }}′</span>
                   <template v-if="m.track_score">
                     <span v-if="p.goals">⚽ {{ p.goals }}</span>
@@ -384,12 +423,38 @@ const showPayload = ref(false);
                 />
                 <input
                   :class="inputClass"
-                  placeholder="Nome do jogador"
-                  :aria-label="`Nome (${team})`"
-                  v-model="draft[team].name"
+                  :list="`atletas-cat-${team}`"
+                  placeholder="Matrícula (ex.: 1301)"
+                  :aria-label="`Matrícula (${team})`"
+                  v-model="draft[team].mat"
+                  @input="onMatricula(team)"
                   @keydown.enter="addPlayer(team)"
                 />
+                <datalist :id="`atletas-cat-${team}`">
+                  <option v-for="a in atletasCat" :key="a.id" :value="a.matricula">{{ a.nome }}</option>
+                </datalist>
               </div>
+              <input
+                :class="`${inputClass} mt-2`"
+                placeholder="Nome do jogador (preenche pela matrícula)"
+                :aria-label="`Nome (${team})`"
+                v-model="draft[team].name"
+                @keydown.enter="addPlayer(team)"
+              />
+              <p
+                v-if="resolvedFor(team)"
+                class="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-secondary"
+              >
+                <Icon name="check" class="h-3.5 w-3.5 shrink-0" />
+                Cadastro: {{ resolvedFor(team).nome }} · {{ resolvedFor(team).posicao }} ·
+                <span class="font-mono">{{ resolvedFor(team).id }}</span>
+              </p>
+              <p
+                v-else-if="draft[team].mat || draft[team].name"
+                class="mt-1.5 flex items-center gap-1.5 text-[11px] text-warning"
+              >
+                <Icon name="alert" class="h-3.5 w-3.5 shrink-0" /> Sem vínculo de cadastro (a pipeline usa o id do atleta).
+              </p>
               <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <input
                   type="number"
@@ -420,14 +485,14 @@ const showPayload = ref(false);
     <!-- 4. Resumo & export -->
     <Card title="Resumo & exportação">
       <template #icon><Icon name="barChart" class="h-4 w-4" /></template>
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
           <p class="font-heading text-2xl font-bold text-ink">{{ totalPlayers }}</p>
           <p class="text-xs uppercase tracking-wide text-ink-muted">Jogadores</p>
         </div>
         <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
-          <p class="font-heading text-2xl font-bold text-ink">{{ totalMinutes }}′</p>
-          <p class="text-xs uppercase tracking-wide text-ink-muted">Minutos somados</p>
+          <p :class="`font-heading text-2xl font-bold ${semVinculo ? 'text-warning' : 'text-ink'}`">{{ semVinculo }}</p>
+          <p class="text-xs uppercase tracking-wide text-ink-muted">Sem vínculo</p>
         </div>
         <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
           <p :class="`font-heading text-2xl font-bold ${dup.size ? 'text-primary-text' : 'text-ink'}`">{{ dup.size }}</p>
@@ -437,23 +502,30 @@ const showPayload = ref(false);
           <p :class="`font-heading text-2xl font-bold ${noNumber ? 'text-warning' : 'text-ink'}`">{{ noNumber }}</p>
           <p class="text-xs uppercase tracking-wide text-ink-muted">Sem número</p>
         </div>
+        <div class="rounded-xl border border-line-soft bg-surface-2 p-3">
+          <p class="font-heading text-2xl font-bold text-ink">{{ totalMinutes }}′</p>
+          <p class="text-xs uppercase tracking-wide text-ink-muted">Minutos somados</p>
+        </div>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
-        <PrimaryButton @click="exportJSON">
-          <Icon name="download" class="h-4 w-4" /> Baixar JSON (banco)
+        <PrimaryButton @click="exportCSV">
+          <Icon name="download" class="h-4 w-4" /> Súmula (CSV)
         </PrimaryButton>
-        <PrimaryButton variant="secondary" @click="exportCSV">
-          <Icon name="download" class="h-4 w-4" /> Baixar CSV (jogadores)
+        <PrimaryButton variant="secondary" @click="exportJSON">
+          <Icon name="download" class="h-4 w-4" /> Súmula (JSON)
         </PrimaryButton>
         <PrimaryButton variant="secondary" @click="copyUUIDs">
           <Icon name="share" class="h-4 w-4" /> Copiar UUIDs
         </PrimaryButton>
       </div>
       <p class="mt-3 text-sm text-ink-muted">
-        O JSON traz as tabelas <span class="font-mono text-ink">matches</span> e <span class="font-mono text-ink">players</span>
-        normalizadas, mais um índice <span class="font-mono text-ink">cv_index</span> com a chave
-        <span class="font-mono text-ink">(match_uuid · cor · número → player_uuid)</span> para a futura pipeline de vídeo.
+        O CSV segue o modelo da escolinha —
+        <span class="font-mono text-ink">athlete_id · atleta · posição · campo · camisa · time · categoria · data</span> —
+        e é nomeado por <span class="font-mono text-ink">dia + campo</span> (ex.:
+        <span class="font-mono text-ink">sumula_2026-08-11_CAMPO-OFICIAL-5</span>). O <span class="font-mono text-ink">athlete_id</span>
+        é a identidade que a pipeline consome; o JSON traz ainda o índice <span class="font-mono text-ink">cv_index</span>
+        (chave cor · número → jogador) para a análise de vídeo.
       </p>
 
       <div class="mt-3">

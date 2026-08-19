@@ -488,4 +488,31 @@ export const diagrams = [
     Dashboard --> D2["GET /conformance - Conformidade"]
     Dashboard --> D3["GET /recent-trainings - Últimos"]`,
   },
+  {
+    id: "pipeline-cv-vlm",
+    title: "11 · Pipeline de Análise (Súmula → CV/VLM)",
+    description: "Do plano aprovado ao gatilho do CV/VLM: a súmula (com athlete_id) casa com os vídeos no bucket.",
+    kind: "flow",
+    source: `graph TD
+    Coach["Coach<br/>submete plano de aula"]
+    Aprova1{"Gerson / Raspada<br/>aprovam o plano?"}
+    Coach --> Aprova1
+    Aprova1 -->|Aprovado| Trig1["Dispara câmeras + fyrecom"]
+    Trig1 --> Bucket[("S3 · fyrecom-data")]
+
+    Aprova1 -->|Aprovado| Aula["Aula / partida acontece<br/>1 súmula por campo"]
+    Aula --> Dev["Coach envia devolutiva<br/>+ súmula"]
+    Dev --> Aprova2{"Gerson / Raspada<br/>aprovam a súmula?"}
+    Aprova2 -->|Aprovado| SumCSV["Súmula CSV<br/>athlete_id · campo · número"]
+    SumCSV --> Bucket
+
+    Videos["Vídeos das 4 câmeras"] --> Bucket
+    Sync["Arquivo de sincronização<br/>das 4 câmeras"] --> Bucket
+
+    Bucket --> Gate{"Vídeos do dia X, campo Y<br/>+ súmula no bucket?"}
+    Gate -->|Sim| Pipe["Pipeline CV/VLM"]
+    Pipe --> Out["Outputs indexados<br/>por athlete_id"]
+
+    Note["Numeração única na partida<br/>dispensa a identificação de time"] -.-> Pipe`,
+  },
 ];
